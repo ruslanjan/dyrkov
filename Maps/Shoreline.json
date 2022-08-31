@@ -1,0 +1,12 @@
+{
+	"x": 390,
+	"y": 240,
+	"z": 0,
+	"scale": 0.3,
+	"maps": [
+		{
+			"Item1": -100,
+			"Item2": "Maps\\Shoreline.png"
+		}
+	]
+}

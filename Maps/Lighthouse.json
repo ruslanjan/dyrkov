@@ -1,0 +1,12 @@
+{
+	"x": 1150,
+	"y": 1410,
+	"z": 0,
+	"scale": 2,
+	"maps": [
+		{
+			"Item1": -100,
+			"Item2": "Maps\\Lighthouse.png"
+		}
+	]
+}
