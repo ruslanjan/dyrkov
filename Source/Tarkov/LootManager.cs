@@ -10,6 +10,7 @@ namespace eft_dma_radar
         private static readonly string[] _containers = new string[] { 
             "body", 
             "XXXcap", 
+            "cap",
             "Ammo_crate_Cap", 
             "Grenade_box_Door", 
             "Medical_Door", 

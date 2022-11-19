@@ -167,7 +167,7 @@ namespace eft_dma_radar
                 if (gameWorld == 0) throw new Exception("Unable to find GameWorld Object, likely not in raid.");
                 _localGameWorld = Memory.ReadPtrChain(gameWorld, Offsets.GameWorld.To_LocalGameWorld); // Game world >> Local Game World
                 var rgtPlayers = new RegisteredPlayers(Memory.ReadPtr(_localGameWorld + Offsets.LocalGameWorld.RegisteredPlayers));
-                if (rgtPlayers.PlayerCount > 1) // Make sure not in hideout,etc.
+                if (rgtPlayers.PlayerCount > 0) // Make sure not in hideout,etc.
                 {
                     _rgtPlayers = rgtPlayers; // update ref
                     return true;

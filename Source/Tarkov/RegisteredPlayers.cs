@@ -100,7 +100,7 @@ namespace eft_dma_radar
                         var playerBase = (ulong)scatterMap.Results[i][0].Result;
                         var playerProfile = (ulong)scatterMap.Results[i][1].Result;
                         string id = (string)scatterMap.Results[i][4].Result;
-                        if (id.Length != 24 && id.Length != 27) throw new ArgumentOutOfRangeException("id"); // Ensure valid ID length
+                        if (id.Length != 24 && id.Length != 27 && id.Length != 36) throw new ArgumentOutOfRangeException("id"); // Ensure valid ID length
                         registered.Add(id); // ID is registered, cache it
                         if (_players.TryGetValue(id, out var existingPlayer)) // Player already exists, check for problems
                         {
@@ -205,7 +205,6 @@ namespace eft_dma_radar
                 for (int i = 0; i < players.Length; i++)
                 {
                     var player = players[i];
-                    Program.Log(player.Name);
                     if (player.LastUpdate) // player may be dead/exfil'd
                     {
                         var corpse = round1.AddEntry(i, 10, player.CorpsePtr, typeof(ulong));

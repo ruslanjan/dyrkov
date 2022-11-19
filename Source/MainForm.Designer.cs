@@ -44,6 +44,8 @@ namespace eft_dma_radar
             this.textBox_LootRegValue = new System.Windows.Forms.TextBox();
             this.label6 = new System.Windows.Forms.Label();
             this.groupBox_MapSetup = new System.Windows.Forms.GroupBox();
+            this.textBox_R = new System.Windows.Forms.TextBox();
+            this.label10 = new System.Windows.Forms.Label();
             this.button_Loot = new System.Windows.Forms.Button();
             this.checkBox_MapFree = new System.Windows.Forms.CheckBox();
             this.button_MapSetupApply = new System.Windows.Forms.Button();
@@ -54,6 +56,7 @@ namespace eft_dma_radar
             this.textBox_mapX = new System.Windows.Forms.TextBox();
             this.label_Pos = new System.Windows.Forms.Label();
             this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.LootWalls = new System.Windows.Forms.CheckBox();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
             this.label_UIScale = new System.Windows.Forms.Label();
             this.trackBar_UIScale = new System.Windows.Forms.TrackBar();
@@ -231,6 +234,8 @@ namespace eft_dma_radar
             // 
             // groupBox_MapSetup
             // 
+            this.groupBox_MapSetup.Controls.Add(this.textBox_R);
+            this.groupBox_MapSetup.Controls.Add(this.label10);
             this.groupBox_MapSetup.Controls.Add(this.button_Loot);
             this.groupBox_MapSetup.Controls.Add(this.checkBox_MapFree);
             this.groupBox_MapSetup.Controls.Add(this.button_MapSetupApply);
@@ -249,6 +254,26 @@ namespace eft_dma_radar
             this.groupBox_MapSetup.TabStop = false;
             this.groupBox_MapSetup.Text = "Map Setup";
             this.groupBox_MapSetup.Visible = false;
+            this.groupBox_MapSetup.Enter += new System.EventHandler(this.groupBox_MapSetup_Enter_1);
+            // 
+            // textBox_R
+            // 
+            this.textBox_R.Location = new System.Drawing.Point(144, 136);
+            this.textBox_R.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.textBox_R.Name = "textBox_R";
+            this.textBox_R.Size = new System.Drawing.Size(57, 27);
+            this.textBox_R.TabIndex = 19;
+            this.textBox_R.TextChanged += new System.EventHandler(this.textBox1_TextChanged);
+            // 
+            // label10
+            // 
+            this.label10.AutoSize = true;
+            this.label10.Location = new System.Drawing.Point(120, 139);
+            this.label10.Name = "label10";
+            this.label10.Size = new System.Drawing.Size(18, 20);
+            this.label10.TabIndex = 18;
+            this.label10.Text = "R";
+            this.label10.Click += new System.EventHandler(this.label10_Click);
             // 
             // button_Loot
             // 
@@ -293,6 +318,7 @@ namespace eft_dma_radar
             this.textBox_mapScale.Name = "textBox_mapScale";
             this.textBox_mapScale.Size = new System.Drawing.Size(57, 27);
             this.textBox_mapScale.TabIndex = 15;
+            this.textBox_mapScale.TextChanged += new System.EventHandler(this.textBox_mapScale_TextChanged);
             // 
             // label5
             // 
@@ -340,6 +366,7 @@ namespace eft_dma_radar
             // 
             // tabPage2
             // 
+            this.tabPage2.Controls.Add(this.LootWalls);
             this.tabPage2.Controls.Add(this.groupBox1);
             this.tabPage2.Location = new System.Drawing.Point(4, 29);
             this.tabPage2.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
@@ -349,6 +376,17 @@ namespace eft_dma_radar
             this.tabPage2.TabIndex = 1;
             this.tabPage2.Text = "Settings";
             this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // LootWalls
+            // 
+            this.LootWalls.AutoSize = true;
+            this.LootWalls.Location = new System.Drawing.Point(665, 55);
+            this.LootWalls.Name = "LootWalls";
+            this.LootWalls.Size = new System.Drawing.Size(154, 24);
+            this.LootWalls.TabIndex = 9;
+            this.LootWalls.Text = "Loot through walls";
+            this.LootWalls.UseVisualStyleBackColor = true;
+            this.LootWalls.CheckedChanged += new System.EventHandler(this.lootWalls_CheckedChanged);
             // 
             // groupBox1
             // 
@@ -616,6 +654,7 @@ namespace eft_dma_radar
             this.groupBox_MapSetup.ResumeLayout(false);
             this.groupBox_MapSetup.PerformLayout();
             this.tabPage2.ResumeLayout(false);
+            this.tabPage2.PerformLayout();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar_UIScale)).EndInit();
@@ -675,6 +714,10 @@ namespace eft_dma_radar
         private Button button_RefreshLoot;
         private Label label_UIScale;
         private TrackBar trackBar_UIScale;
+        private CheckBox checkBox1;
+        private CheckBox LootWalls;
+        private TextBox textBox_R;
+        private Label label10;
     }
 }
 

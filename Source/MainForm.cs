@@ -321,6 +321,7 @@ namespace eft_dma_radar
                 textBox_mapX.Text = _selectedMap.ConfigFile.X.ToString();
                 textBox_mapY.Text = _selectedMap.ConfigFile.Y.ToString();
                 textBox_mapScale.Text = _selectedMap.ConfigFile.Scale.ToString();
+                textBox_R.Text = _selectedMap.ConfigFile.R.ToString();
             }
             else groupBox_MapSetup.Visible = false;
         }
@@ -352,13 +353,15 @@ namespace eft_dma_radar
         {
             if (float.TryParse(textBox_mapX.Text, out float x) &&
                 float.TryParse(textBox_mapY.Text, out float y) &&
-                float.TryParse(textBox_mapScale.Text, out float scale))
+                float.TryParse(textBox_mapScale.Text, out float scale) &&
+                float.TryParse(textBox_R.Text, out float r))
             {
                 lock (_renderLock)
                 {
                     _selectedMap.ConfigFile.X = x;
                     _selectedMap.ConfigFile.Y = y;
                     _selectedMap.ConfigFile.Scale = scale;
+                    _selectedMap.ConfigFile.R = r;
                     _selectedMap.ConfigFile.Save(_selectedMap);
                 }
             }
@@ -756,6 +759,7 @@ namespace eft_dma_radar
                         var mouseOverGrp = _mouseOverGroup; // cache value for entire render
                         // Get main player location
                         var localPlayerPos = localPlayer.Position;
+                        // Program.Log($"Player pos: {localPlayer.Position.X}, {localPlayer.Position.Y}");
                         var localPlayerMapPos = localPlayerPos.ToMapPos(_selectedMap);
                         if (groupBox_MapSetup.Visible) // Print coordinates (to make it easy to setup JSON configs)
                         {
@@ -783,7 +787,7 @@ namespace eft_dma_radar
                         // Draw LocalPlayer Scope
                         {
                             var localPlayerZoomedPos = localPlayerMapPos.ToZoomedPos(mapParams); // always true
-                            localPlayerZoomedPos.DrawPlayerMarker(canvas, localPlayer, trackBar_AimLength.Value, null);
+                            localPlayerZoomedPos.DrawPlayerMarker(canvas, localPlayer, _selectedMap, trackBar_AimLength.Value, null);
                         }
 
                         // Draw other players
@@ -857,7 +861,7 @@ namespace eft_dma_radar
                                         if (player.ErrorCount > 10) lines[0] = "ERROR"; // In case POS stops updating, let us know!
                                     }
                                     playerZoomedPos.DrawPlayerText(canvas, player, lines, mouseOverGrp);
-                                    playerZoomedPos.DrawPlayerMarker(canvas, player, aimlineLength, mouseOverGrp);
+                                    playerZoomedPos.DrawPlayerMarker(canvas, player, _selectedMap, aimlineLength, mouseOverGrp);
                                 }
                             }
                             if (checkBox_Loot.Checked) // Draw loot (if enabled)
@@ -1133,6 +1137,37 @@ namespace eft_dma_radar
         }
 
         private void tabPage1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void lootWalls_CheckedChanged(object sender, EventArgs e)
+        {
+            if (this.LootWalls.Checked)
+            {
+                
+            } else
+            {
+
+            }
+        }
+
+        private void groupBox_MapSetup_Enter_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label10_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void textBox_mapScale_TextChanged(object sender, EventArgs e)
         {
 
         }

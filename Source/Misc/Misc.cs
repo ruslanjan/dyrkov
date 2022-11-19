@@ -305,7 +305,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Draws a Player Marker on this location.
         /// </summary>
-        public void DrawPlayerMarker(SKCanvas canvas, Player player, int aimlineLength, int? mouseoverGrp)
+        public void DrawPlayerMarker(SKCanvas canvas, Player player, Map map, int aimlineLength, int? mouseoverGrp)
         {
             var radians = player.Rotation.X.ToRadians();
             SKPaint paint;
@@ -314,7 +314,7 @@ namespace eft_dma_radar
             else paint = player.GetPaint();
             canvas.DrawCircle(this.GetPoint(), 6 * UIScale, paint); // draw LocalPlayer marker
             canvas.DrawLine(this.GetPoint(),
-                this.GetAimlineEndpoint(radians, aimlineLength),
+                this.GetAimlineEndpoint(radians.ToMapRad(map), aimlineLength),
                 paint); // draw LocalPlayer aimline
         }
         /// <summary>
@@ -503,6 +503,11 @@ namespace eft_dma_radar
         /// </summary>
         [JsonPropertyName("scale")]
         public float Scale { get; set; }
+        /// <summary>
+        /// Arbitrary scale value to align map scale between the Bitmap and Game Coordinates.
+        /// </summary>
+        [JsonPropertyName("r")]
+        public float R { get; set; } = 0;
         /// <summary>
         /// * This List contains the path to the map file(s), and a minimum height (Z) value.
         /// * Each tuple consists of Item1: (float)MIN_HEIGHT, Item2: (string>MAP_PATH

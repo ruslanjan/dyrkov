@@ -53,12 +53,19 @@ namespace eft_dma_radar
         /// </summary>
         public static MapPosition ToMapPos(this System.Numerics.Vector3 vector, Map map)
         {
+            var X = (Math.Cos(map.ConfigFile.R) * vector.X - Math.Sin(map.ConfigFile.R) * vector.Y) * map.ConfigFile.Scale;
+            var Y = (Math.Sin(map.ConfigFile.R) * vector.X + Math.Cos(map.ConfigFile.R) * vector.Y) * map.ConfigFile.Scale; // Invert 'Y' unity 0,0 bottom left, C# top left
+            X = map.ConfigFile.X + X;
+            Y = map.ConfigFile.Y - Y;
             return new MapPosition()
             {
-                X = map.ConfigFile.X + (vector.X * map.ConfigFile.Scale),
-                Y = map.ConfigFile.Y - (vector.Y * map.ConfigFile.Scale), // Invert 'Y' unity 0,0 bottom left, C# top left
+                X = (float)X, Y = (float)Y,
                 Height = vector.Z // Keep as float, calculation done later
             };
+        }
+        public static double ToMapRad(this double r, Map map)
+        {
+            return r - map.ConfigFile.R;
         }
         /// <summary>
         /// Gets 'Zoomed' map position coordinates.

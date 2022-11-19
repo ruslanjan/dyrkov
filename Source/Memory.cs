@@ -604,7 +604,7 @@ namespace eft_dma_radar
         private static void ThrowIfDMAShutdown()
         {
             if (!_running) throw new DMAShutdown("Memory Thread/DMA is shutting down!");
-        }
+        }   
 
 
         /// Mem Align Functions Ported from Win32 (C Macros)

@@ -50,7 +50,13 @@
     }
     public struct Player // EFT.Player : MonoBehaviour, GInterface3EB2, GInterface457E, GInterface4579, GInterface4583, GInterface45BA, GInterface8D68, IDissonancePlayer
     {
-        public static readonly uint[] To_TransformInternal = new uint[] { 0xA8, 0x28, 0x28, Offsets.UnityList.Base, Offsets.UnityListBase.Start + (0 * 0x8), 0x10 }; // to TransformInternal
+        public static readonly uint[] To_TransformInternal = new uint[] { 
+            0xA8, // EFT.PlayerBody
+            0x28, // SkeletonRootJoint : Diz.Skinning.Skeleton
+            0x28, // System.Collections.Generic.List<Transform>
+            Offsets.UnityList.Base, 
+            Offsets.UnityListBase.Start + (0 * 0x8), 
+            0x10 }; // to TransformInternal
         public const uint MovementContext = 0x40; // to MovementContext
         public const uint Corpse = 0x338; // EFT.Interactive.Corpse
         public const uint Profile = 0x4F0; // to Profile
@@ -142,12 +148,37 @@
         public const uint LootItemBase = 0x50; // to LootItemBase
         public const uint ContainerItemOwner = 0x108; // to ContainerItemOwner
     }
-    public struct LootItemBase //EFT.InventoryLogic.Item
+
+    /*
+ [Class] -.GClass1AE8 : GClass1A55, IApplicable
+    [00][S] list_0x00 : System.Collections.Generic.List<Item>
+    [00][S] <ItemNoHashComparer>k__BackingField : System.Collections.Generic.IEqualityComparer<Item>
+    [08][S] Replacements : System.Collections.Generic.Dictionary<Enum, String>
+    [10] Id : String
+    [18] OriginalAddress : EFT.InventoryLogic.ItemAddress
+    [20] Components : System.Collections.Generic.List<IItemComponent>
+    [28] _toStringCache : String
+    [30] CurrentAddress : EFT.InventoryLogic.ItemAddress
+    [38] ChildrenChanged : -.GClass25A1<Item>
+    [40] <Template>k__BackingField : EFT.InventoryLogic.ItemTemplate
+    [48] Attributes : System.Collections.Generic.List<GClass1C05>
+    [50] <DiscardLimit>k__BackingField : System.Nullable<Int32>
+    [58] UnlimitedCount : Boolean
+    [5C] BuyRestrictionMax : Int32
+    [60] BuyRestrictionCurrent : Int32
+    [64] StackObjectsCount : Int32
+    [68] Version : Int32
+    [6C] SpawnedInSession : Boolean
+    [70] Grids : -.GClass1A5B[]
+    [78] Slots : EFT.InventoryLogic.Slot[]
+     
+     */
+    public struct LootItemBase // GClass1AE8
     {
         public const uint ItemTemplate = 0x40; // to ItemTemplate
         public const uint Grids = 0x70; // to Grids
         public const uint Slots = 0x78; // to UnityList
-        public const uint Cartridges = 0x90; // via -.GClass19FD : GClass19D6, IAmmoContainer , to StackSlot
+        public const uint Cartridges = 0x90; // via -.GClass1B22 : GClass1AFB, IAmmoContainer , to StackSlot
     }
     public struct StackSlot // EFT.InventoryLogic.StackSlot : Object, IContainer
     {
@@ -155,8 +186,8 @@
     }
     public struct ItemTemplate //EFT.InventoryLogic.ItemTemplate
     {
-        public const uint BsgId = 0x50; // string,unity
-        public const uint IsQuestItem = 0x9C; // bool
+        public const uint BsgId = 0x50; // string,unity     [50] _id : String
+        public const uint IsQuestItem = 0x9C; // bool       [9C] QuestItem : Boolean
     }
     public struct LootBaseObject
     {
