@@ -1,6 +1,11 @@
-﻿using System;
+﻿using eft_dma_radar;
+using Newtonsoft.Json;
+using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Net;
+using System.Net.Http;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace eft_dma_radar
@@ -15,28 +20,52 @@ namespace eft_dma_radar
         #region Static_Constructor
         static DyrkovMarketManager()
         {
-            List<TarkovMarketItem> jsonItems = null;
+            List<TarkovDev.Item> jsonItems = null;
             var allItems = new Dictionary<string, LootItem>(StringComparer.OrdinalIgnoreCase);
             // Get Market Loot
-            if (!File.Exists("market.json") ||
-            File.GetLastWriteTime("market.json").AddHours(24) < DateTime.Now) // only update every 24h
+            if (true || !File.Exists("market.json") ||
+                File.GetLastWriteTime("market.json").AddHours(24) < DateTime.Now) // only update every 24h
+            // if (false)
             {
                 using (var client = new HttpClient())
                 {
-                    using var req = client.GetAsync("https://market_master.filter-editor.com/data/marketData_en.json").Result;
-                    string json = req.Content.ReadAsStringAsync().Result;
-                    jsonItems = JsonSerializer.Deserialize<List<TarkovMarketItem>>(json);
+                    //using var req = client.GetAsync("https://market_master.filter-editor.com/data/marketData_en.json").Result;
+                    //string json = req.Content.ReadAsStringAsync().Result;
+                    //jsonItems = JsonSerializer.Deserialize<List<TarkovMarketItem>>(json);
+
+                    var data = new Dictionary<string, string>()
+                    {
+                        {"query", @"
+query {
+  items {
+    name,
+    id,
+   	shortName,
+    avg24hPrice,
+    sellFor {
+      priceRUB,
+    }
+  }
+}"}
+                    };
+                    using var req = client.PostAsJsonAsync("https://api.tarkov.dev/graphql", data).Result;
+                    var json = req.Content.ReadAsStringAsync().Result;
+                    var res = TarkovDev.TarkovDevResponse.FromJson(json);
+                    jsonItems = res.Data.Items;
+
                     File.WriteAllText("market.json", json);
                 }
             }
             else
             {
                 var json = File.ReadAllText("market.json");
-                jsonItems = JsonSerializer.Deserialize<List<TarkovMarketItem>>(json);
+                //jsonItems = JsonSerializer.Deserialize<List<TarkovDev.Item>>(json);
+                var res = TarkovDev.TarkovDevResponse.FromJson(json);
+                jsonItems = res.Data.Items;
             }
             if (jsonItems is not null)
             {
-                var jsonItemsFiltered = jsonItems.Where(x => x.isFunctional); // Filter only 'functional' items
+                var jsonItemsFiltered = jsonItems; //.Where(x => x.isFunctional); // Filter only 'functional' items
                 // Get Manual "Important" loot
                 if (File.Exists("importantLoot.txt")) // Each line contains a BSG ID (item id) and nothing else
                 {
@@ -87,7 +116,7 @@ namespace eft_dma_radar
             else return num.ToString();
         }
 
-        private static int GetItemValue(TarkovMarketItem item)
+        private static int GetItemValue(TarkovDev.Item item)
         {
             if (item.avg24hPrice > item.traderPrice)
                 return item.avg24hPrice;
@@ -101,6 +130,8 @@ namespace eft_dma_radar
     /// <summary>
     /// Class JSON Representation of Tarkov Market Data.
     /// </summary>
+    /// 
+
     public class TarkovMarketItem
     {
         public string uid { get; set; }
@@ -129,4 +160,30 @@ namespace eft_dma_radar
         public string apiKey { get; set; }
     }
     #endregion
+}
+
+namespace TarkovDev
+{
+    public partial class Item
+    {
+        [JsonIgnore]
+        public string name { get { return Name; } }
+        [JsonIgnore]
+        public string bsgId { get { return Id; } }
+        [JsonIgnore]
+        public string shortName { get { return ShortName; } }
+        [JsonIgnore]
+        public int avg24hPrice => (int)Avg24HPrice;
+
+        [JsonIgnore]
+        public int traderPrice => (int)SellFor.DefaultIfEmpty().Max(x =>
+        {
+            if (x == null)
+            {
+                return Avg24HPrice;
+            }
+            return x.PriceRub;
+        });
+
+    }
 }

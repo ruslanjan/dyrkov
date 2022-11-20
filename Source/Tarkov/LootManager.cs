@@ -375,7 +375,7 @@ namespace eft_dma_radar
         public string Label { get; init; }
         public bool Important { get; init; } = false;
         public Vector3 Position { get; init; }
-        public TarkovMarketItem Item { get; init; } = new();
+        public TarkovDev.Item Item { get; init; } = new();
         public bool AlwaysShow { get; init; } = false;
 
     }

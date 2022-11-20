@@ -59,10 +59,10 @@
             0x10 }; // to TransformInternal
         public const uint MovementContext = 0x40; // to MovementContext
         public const uint Corpse = 0x338; // EFT.Interactive.Corpse
-        public const uint Profile = 0x4F0; // to Profile
-        public const uint HealthController = 0x528; // to HealthController
-        public const uint InventoryController = 0x538; // to InventoryController
-        public const uint IsLocalPlayer = 0x807; // bool
+        public const uint Profile = 0x4E8; // to Profile
+        public const uint HealthController = 0x520; // to HealthController
+        public const uint InventoryController = 0x530; // to InventoryController
+        public const uint IsLocalPlayer = 0x7FF; // bool
     }
     public struct Profile // EFT.Profile
     {
