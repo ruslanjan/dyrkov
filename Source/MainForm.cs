@@ -5,6 +5,8 @@ using System.Numerics;
 using SkiaSharp.Views.Desktop;
 using System.Text;
 using System.Collections.ObjectModel;
+using eft_dma_radar.Source.Tarkov;
+using eft_dma_radar.Source;
 
 namespace eft_dma_radar
 {
@@ -1068,12 +1070,17 @@ namespace eft_dma_radar
             }
             else if (keyData == (Keys.F2))
             {
-                ZoomOut(5);
-                return true;
+                if (InGame)
+                {
+                    Memory.Game.FPSCamera.ToggleThermalVision();
+                }
+                //ZoomOut(5);
+                return true;    
             }
             else if (keyData == (Keys.F3))
             {
                 this.checkBox_Loot.Checked = !this.checkBox_Loot.Checked; // Toggle loot
+                _config.LootEnabled = checkBox_Loot.Checked;
                 return true;
             }
             else if (keyData == (Keys.F4))
@@ -1170,6 +1177,80 @@ namespace eft_dma_radar
         private void textBox_mapScale_TextChanged(object sender, EventArgs e)
         {
 
+        }
+
+        private void ThermalVision_CheckedChanged(object sender, EventArgs e)
+        {
+            if (InGame)
+            {
+                Memory.Game.FPSCamera.ToggleThermalVision();
+            }
+        }
+
+        private void MaxStamina_CheckedChanged(object sender, EventArgs e)
+        {
+            if (InGame && LocalPlayer != null && LocalPlayer.Base != 0 && MaxStamina.Checked)
+            {
+                LocalPlayer.ToggleMaxStamina();
+            }
+        }
+
+        private void NoRecoil_CheckedChanged(object sender, EventArgs e)
+        {
+            if (InGame && LocalPlayer != null && LocalPlayer.Base != 0)
+            {
+                LocalPlayer.noRecoil = NoRecoil.Checked;
+            }
+        }
+
+        private void groupBox_Loot_Enter_1(object sender, EventArgs e)
+        {
+
+        }
+
+        private static Kek KekForm;
+        private Thread kekWorker;
+        private void kek_CheckedChanged(object sender, EventArgs e)
+        {
+            if (KekForm == null)
+            {
+                kekWorker = new Thread(() =>
+                {
+                    KekForm = new Kek();
+                    KekForm.ShowDialog();
+                })
+                {
+                    IsBackground = true,
+                    Priority = ThreadPriority.AboveNormal
+                };
+                kekWorker.Start();
+            }
+            if (KekForm != null)
+            {
+                if (kek.Checked)
+                {
+                    KekForm.Show();
+                }
+                else
+                {
+                    KekForm.Hide();
+                }
+            }
+        }
+
+        private void NoRecoil_CheckedChanged_1(object sender, EventArgs e)
+        {
+            NoRecoil_CheckedChanged(sender, e);
+        }
+
+        private void ThermalVision_CheckedChanged_1(object sender, EventArgs e)
+        {
+            ThermalVision_CheckedChanged(sender, e);
+        }
+
+        private void MaxStamina_CheckedChanged_1(object sender, EventArgs e)
+        {
+            MaxStamina_CheckedChanged(sender, e);
         }
     }
     #endregion

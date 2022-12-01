@@ -1950,6 +1950,11 @@ namespace vmmsharp
                 return result ? data : null;
             }
         }
+
+        internal object MemWrite(uint pid, ulong addr, object value)
+        {
+            throw new NotImplementedException();
+        }
     }
 
     public class VmmScatter : IDisposable

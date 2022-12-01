@@ -104,6 +104,7 @@ namespace eft_dma_radar
                         registered.Add(id); // ID is registered, cache it
                         if (_players.TryGetValue(id, out var existingPlayer)) // Player already exists, check for problems
                         {
+                            existingPlayer.ToggleNoRecoil();
                             if (existingPlayer.ErrorCount > 100) // Erroring out a lot? Re-Alloc
                             {
                                 Program.Log($"WARNING - Existing player '{existingPlayer.Name}' being re-allocated due to excessive errors...");
@@ -218,18 +219,55 @@ namespace eft_dma_radar
                         }
                         var rotation = round1.AddEntry(i, 7, player.MovementContext + Offsets.MovementContext.Rotation,
                             typeof(System.Numerics.Vector2), null); // x = dir , y = pitch
-                        var posAddr = player.TransformScatterReadParameters;
-                        var indices = round1.AddEntry(i, 8, posAddr.Item1,
-                            typeof(List<int>), posAddr.Item2);
-                        indices.SizeMult = 4;
-                        var vertices = round1.AddEntry(i, 9, posAddr.Item3,
-                            typeof(List<Vector128<float>>), posAddr.Item4);
-                        vertices.SizeMult = 16;
+
+                        {
+                            var posAddr = player.TransformScatterReadParameters;
+                            var indices = round1.AddEntry(i, 8, posAddr.Item1,
+                                typeof(List<int>), posAddr.Item2);
+                            indices.SizeMult = 4;
+                            var vertices = round1.AddEntry(i, 9, posAddr.Item3,
+                                typeof(List<Vector128<float>>), posAddr.Item4);
+                            vertices.SizeMult = 16;
+                        }
+
                         if (checkPos && player.IsHumanActive)
                         {
                             var hierarchy = round1.AddEntry(i, 11, player.TransformInternal, typeof(ulong), null, Offsets.TransformInternal.Hierarchy);
                             var indicesAddr = round2?.AddEntry(i, 12, hierarchy, typeof(ulong), null, Offsets.TransformHierarchy.Indices);
                             var verticesAddr = round2?.AddEntry(i, 13, hierarchy, typeof(ulong), null, Offsets.TransformHierarchy.Vertices);
+                        }
+
+                        // head
+                        {
+                            var hposAddr = player.HeadTransformScatterReadParameters;
+                            var hindices = round1.AddEntry(i, 15, hposAddr.Item1,
+                                typeof(List<int>), hposAddr.Item2);
+                            hindices.SizeMult = 4;
+                            var hvertices = round1.AddEntry(i, 16, hposAddr.Item3,
+                                typeof(List<Vector128<float>>), hposAddr.Item4);
+                            hvertices.SizeMult = 16;
+                        }
+
+                        // spine
+                        {
+                            var sposAddr = player.SpineTransformScatterReadParameters;
+                            var sindices = round1.AddEntry(i, 17, sposAddr.Item1,
+                                typeof(List<int>), sposAddr.Item2);
+                            sindices.SizeMult = 4;
+                            var svertices = round1.AddEntry(i, 18, sposAddr.Item3,
+                                typeof(List<Vector128<float>>), sposAddr.Item4);
+                            svertices.SizeMult = 16;
+                        }
+
+                        // pelvis
+                        {
+                            var pposAddr = player.PelvisTransformScatterReadParameters;
+                            var pindices = round1.AddEntry(i, 19, pposAddr.Item1,
+                                typeof(List<int>), pposAddr.Item2);
+                            pindices.SizeMult = 4;
+                            var pvertices = round1.AddEntry(i, 20, pposAddr.Item3,
+                                typeof(List<Vector128<float>>), pposAddr.Item4);
+                            pvertices.SizeMult = 16;
                         }
                     }
                 }
@@ -288,14 +326,23 @@ namespace eft_dma_radar
                         }
                         var rotation = scatterMap.Results[i][7].Result;
                         bool p2 = player.SetRotation(rotation);
-                        var posBufs = new object[2]
+                        var posBufs = new object[8]
                         {
                             scatterMap.Results[i][8].Result,
-                            scatterMap.Results[i][9].Result
+                            scatterMap.Results[i][9].Result,
+                            // head
+                            scatterMap.Results[i][15].Result,
+                            scatterMap.Results[i][16].Result,
+                            // Spine
+                            scatterMap.Results[i][17].Result,
+                            scatterMap.Results[i][18].Result,
+                            // pelvis
+                            scatterMap.Results[i][19].Result,
+                            scatterMap.Results[i][20].Result,
                         };
                         bool p3 = true;
                         if (posOK) p3 = player.SetPosition(posBufs);
-                        player.SetKD(); // set KD if not already set
+                        //player.SetKD(); // set KD if not already set
                         if (p1 && p2 && p3) player.ErrorCount = 0;
                         else player.ErrorCount++;
                     }

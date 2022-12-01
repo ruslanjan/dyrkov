@@ -14,6 +14,12 @@
         public const uint Length = 0x10; // int32
         public const uint Value = 0x14; // string,unicode
     }
+
+    public struct Kernel
+    {
+        public static readonly uint[] ClassName = new uint[] { 0x0, 0x0, 0x48 };
+    }
+
     public struct ModuleBase
     {
         public const uint GameObjectManager = 0x17FFD28; // to eft_dma_radar.GameObjectManager
@@ -35,6 +41,16 @@
         public const uint RegisteredPlayers = 0x90; // to RegisteredPlayers
         public const uint Grenades = 0x108; // to Grenades
     }
+
+    public struct ThermalVision
+    {
+        public const uint On = 0xe0;
+        public const uint IsNoisy = 0xe1;
+        public const uint IsFpsStuck = 0xe2;
+        public const uint IsMotionBlurred= 0xe3;
+        public const uint IsGlitch = 0xe4;
+        public const uint IsPixelated = 0xe5;
+    }
     public struct ExfilController // -.GClass0B67
     {
         public const uint ExfilCount = 0x18; // int32
@@ -50,6 +66,7 @@
     }
     public struct Player // EFT.Player : MonoBehaviour, GInterface3EB2, GInterface457E, GInterface4579, GInterface4583, GInterface45BA, GInterface8D68, IDissonancePlayer
     {
+        
         public static readonly uint[] To_TransformInternal = new uint[] { 
             0xA8, // EFT.PlayerBody
             0x28, // SkeletonRootJoint : Diz.Skinning.Skeleton
@@ -57,19 +74,38 @@
             Offsets.UnityList.Base, 
             Offsets.UnityListBase.Start + (0 * 0x8), 
             0x10 }; // to TransformInternal
+        public static readonly uint[] bone_matrix = new uint[]
+        {
+            0xA8, 0x28, 0x28, Offsets.UnityList.Base
+        };
+        
         public const uint MovementContext = 0x40; // to MovementContext
         public const uint Corpse = 0x338; // EFT.Interactive.Corpse
         public const uint Profile = 0x4E8; // to Profile
         public const uint HealthController = 0x520; // to HealthController
         public const uint InventoryController = 0x530; // to InventoryController
+        public const uint Physical = 0x4f8;
+        public const uint ProceduralWeaponAnimation = 0x198;
         public const uint IsLocalPlayer = 0x7FF; // bool
     }
+    public struct Physical
+    {
+        public const uint MaxStamina = 0x38;
+        public const uint MaxHandStamina = 0x40;
+        public const uint MaxOxygen = 0x40;
+        public const uint buff = 0x50;
+        public const uint AccountId = 0x18; // unity string
+        public const uint PlayerInfo = 0x28; // to PlayerInfo
+        public const uint Stats = 0xE8; // to Stats
+    }
+
     public struct Profile // EFT.Profile
     {
         public const uint Id = 0x10; // unity string
         public const uint AccountId = 0x18; // unity string
         public const uint PlayerInfo = 0x28; // to PlayerInfo
         public const uint Stats = 0xE8; // to Stats
+        public const uint Skills = 0x60;
     }
     public struct Stats // -.GClass05E4
     {
@@ -78,6 +114,16 @@
     public struct OverallCounters // GClass1872
     {
         public const uint Counters = 0x10; // to Dictionary<IntPtr, ulong>
+    }
+
+    public struct Skills // EFT.Profile
+    {
+        public const uint AttentionLootSpeed = 0x160; 
+        public const uint AttentionExamine = 0x168;
+        public const uint MagDrillsUnLoadSpeed = 0x188; 
+        public const uint MagDrillsLoadSpeed = 0x180;
+        public const uint PerceptionLootDot = 0x120;
+        public const uint Value = 0x30; // float
     }
     public struct PlayerInfo // -.GClass1118
     {
@@ -145,8 +191,8 @@
     public struct LootInteractiveClass
     {
         public const uint LootBaseObject = 0x10; // to LootBaseObject
-        public const uint LootItemBase = 0x50; // to LootItemBase
-        public const uint ContainerItemOwner = 0x108; // to ContainerItemOwner
+        public const uint LootItemBase = 0x0b0;//0x50; // to LootItemBase
+        public const uint ContainerItemOwner = 0x108; // to LootableContainer.ItemOwner
     }
 
     /*
@@ -173,13 +219,15 @@
     [78] Slots : EFT.InventoryLogic.Slot[]
      
      */
-    public struct LootItemBase // GClass1AE8
+    public struct LootItemBase // GClass1AE8 // EFT.InventoryLogic.Item
     {
         public const uint ItemTemplate = 0x40; // to ItemTemplate
         public const uint Grids = 0x70; // to Grids
         public const uint Slots = 0x78; // to UnityList
         public const uint Cartridges = 0x90; // via -.GClass1B22 : GClass1AFB, IAmmoContainer , to StackSlot
     }
+
+
     public struct StackSlot // EFT.InventoryLogic.StackSlot : Object, IContainer
     {
         public const uint Items = 0x10; // to UnityList , of LootItemBase
@@ -207,7 +255,7 @@
     }
     public struct TransformInternal
     {
-        public const uint Hierarchy = 0x38; // to TransformHierarchy
+        public const uint Hierarchy  = 0x38; // to TransformHierarchy
         public const uint HierarchyIndex = 0x40; // int32
     }
     public struct TransformHierarchy

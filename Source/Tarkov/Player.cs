@@ -22,6 +22,9 @@ namespace eft_dma_radar
         private readonly object _posLock = new(); // sync access to this.Position (non-atomic)
         private readonly GearManager _gearManager;
         private Transform _transform;
+        private Transform _headTransform;
+        private Transform _spineTransform;
+        private Transform _pelvisTransform;
 
         #region PlayerProperties
         /// <summary>
@@ -68,7 +71,13 @@ namespace eft_dma_radar
         /// Player's current health (sum of all 7 body parts).
         /// </summary>
         public int Health { get; private set; } = -1;
-        private Vector3 _pos = new Vector3(0, 0, 0); // backing field
+        private Vector3 _pos = new(0, 0, 0); // backing field
+        private readonly object _hposLock = new(); // sync access to this.Position (non-atomic)
+        private Vector3 _hpos = new(0, 0, 0); // backing field
+        private readonly object _sposLock = new(); // sync access to this.Position (non-atomic)
+        private Vector3 _spos = new(0, 0, 0); // backing field
+        private readonly object _pposLock = new(); // sync access to this.Position (non-atomic)
+        private Vector3 _ppos = new(0, 0, 0); // backing field
         /// <summary>
         /// Player's Unity Position in Local Game World.
         /// </summary>
@@ -89,6 +98,62 @@ namespace eft_dma_radar
                 }
             }
         }
+
+        public Vector3 HeadPos
+        {
+            get
+            {
+                lock (_hposLock)
+                {
+                    return _hpos;
+                }
+            }
+            private set
+            {
+                lock (_hposLock)
+                {
+                    _hpos = value;
+                }
+            }
+        }
+
+        public Vector3 SpinePos
+        {
+            get
+            {
+                lock (_sposLock)
+                {
+                    return _spos;
+                }
+            }
+            private set
+            {
+                lock (_sposLock)
+                {
+                    _spos = value;
+                }
+            }
+        }
+
+        public Vector3 PelvisPos
+        {
+            get
+            {
+                lock (_pposLock)
+                {
+                    return _ppos;
+                }
+            }
+            private set
+            {
+                lock (_pposLock)
+                {
+                    _ppos = value;
+                }
+            }
+        }
+
+
         /// <summary>
         /// Cached 'Zoomed Position' on the Radar GUI. Used for mouseover events.
         /// </summary>
@@ -205,6 +270,10 @@ namespace eft_dma_radar
         /// </summary>
         public ulong Info { get; }
         public ulong TransformInternal { get; }
+        public ulong headTransform { get; }
+        public ulong spineTransform { get; }
+        public ulong pelvisTransform { get; }
+
         public ulong VerticesAddr
         {
             get => _transform?.VerticesAddr ?? 0x0;
@@ -229,6 +298,19 @@ namespace eft_dma_radar
         {
             get => _transform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
         }
+
+        public Tuple<ulong, int, ulong, int> HeadTransformScatterReadParameters
+        {
+            get => _headTransform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
+        }
+        public Tuple<ulong, int, ulong, int> SpineTransformScatterReadParameters
+        {
+            get => _spineTransform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
+        }
+        public Tuple<ulong, int, ulong, int> PelvisTransformScatterReadParameters
+        {
+            get => _pelvisTransform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
+        }
         #endregion
 
         #region Static_Constructor
@@ -249,6 +331,38 @@ namespace eft_dma_radar
         /// <summary>
         /// Player Constructor.
         /// </summary>
+        public enum bones : ulong
+        {
+            HumanBase = 0,
+            HumanPelvis = 14,
+            HumanLThigh1 = 15,
+            HumanLThigh2 = 16,
+            HumanLCalf = 17,
+            HumanLFoot = 18,
+            HumanLToe = 19,
+            HumanRThigh1 = 20,
+            HumanRThigh2 = 21,
+            HumanRCalf = 22,
+            HumanRFoot = 23,
+            HumanRToe = 24,
+            HumanSpine1 = 29,
+            HumanSpine2 = 36,
+            HumanSpine3 = 37,
+            HumanLCollarbone = 89,
+            HumanLUpperarm = 90,
+            HumanLForearm1 = 91,
+            HumanLForearm2 = 92,
+            HumanLForearm3 = 93,
+            HumanLPalm = 94,
+            HumanRCollarbone = 110,
+            HumanRUpperarm = 111,
+            HumanRForearm1 = 112,
+            HumanRForearm2 = 113,
+            HumanRForearm3 = 114,
+            HumanRPalm = 115,
+            HumanNeck = 132,
+            HumanHead = 133
+        };
         public Player(ulong playerBase, ulong playerProfile, Vector3? pos = null)
         {
             try
@@ -270,21 +384,35 @@ namespace eft_dma_radar
                     HealthEntries[i] = Memory.ReadPtrChain(healthEntriesList, new uint[] { 0x30 + (i * 0x18), Offsets.HealthEntry.Value });
                 }
                 MovementContext = Memory.ReadPtr(playerBase + Offsets.Player.MovementContext);
+                
+                
+                var bone_matrix = Memory.ReadPtrChain(Base, Offsets.Player.bone_matrix);
+                headTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanHead) * 0x8)) + 0x10);
+                _headTransform = new Transform(headTransform);
+                
+                pelvisTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanPelvis) * 0x8)) + 0x10);
+                _pelvisTransform = new Transform(pelvisTransform);
+                
+                spineTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanSpine2) * 0x8)) + 0x10);
+                _spineTransform = new Transform(spineTransform);
+
                 TransformInternal = Memory.ReadPtrChain(playerBase, Offsets.Player.To_TransformInternal);
                 _transform = new Transform(TransformInternal, true);
+                
                 var isLocalPlayer = Memory.ReadValue<bool>(playerBase + Offsets.Player.IsLocalPlayer);
                 var playerSide = Memory.ReadValue<int>(Info + Offsets.PlayerInfo.PlayerSide); // Scav, PMC, etc.
                 IsPmc = playerSide == 0x1 || playerSide == 0x2;
                 if (isLocalPlayer)
                 {
+                    Program.Log($"LocalPlayer:0x{Base.ToString("X")}");
 #if DEBUG
                     // Run this section while 'In-Raid' as a PMC (not Scav)
                     Debug.WriteLine($"LocalPlayer Acct Id: {GetAccountID()}");
                     /* Change 0, 0 with the Kills, Deaths for your player as obtained in the 'Overall' game tab
                      * Use result(s) to set KillIndex/DeathIndex in KDManager.cs */
-                    KDManager.TestGetIndexes(Profile, 0, 0);
-                    try { _kdManager = new KDManager(Profile); } catch { } // Attempt to instantiate KDManager
-                    Debug.WriteLine($"LocalPlayer K/D: {_kdManager?.GetKD(Profile)}"); // Check if K/D is correct, reference 'Overall' game tab
+                    //KDManager.TestGetIndexes(Profile, 0, 0);
+                    //try { _kdManager = new KDManager(Profile); } catch { } // Attempt to instantiate KDManager
+                    //Debug.WriteLine($"LocalPlayer K/D: {_kdManager?.GetKD(Profile)}"); // Check if K/D is correct, reference 'Overall' game tab
 #endif
                     GroupID = GetGroupID();
                     Type = PlayerType.LocalPlayer;
@@ -406,14 +534,17 @@ namespace eft_dma_radar
             try
             {
                 if (obj is null) throw new NullReferenceException();
-                this.Position = _transform.GetPosition(obj);
+                this.Position = _transform.GetPosition(new object[] { obj[0], obj[1] });
+                this.HeadPos = _headTransform.GetPosition();
+                this.SpinePos = _spineTransform.GetPosition(new object[] { obj[4], obj[5] });
+                this.PelvisPos = _pelvisTransform.GetPosition(new object[] { obj[6], obj[7] });
                 return true;
             }
             catch (Exception ex) // Attempt to re-allocate Transform on error
             {
                 Program.Log($"ERROR getting Player '{Name}' Position: {ex}");
                 if (!_posRefreshSw.IsRunning) _posRefreshSw.Start();
-                else if (_posRefreshSw.ElapsedMilliseconds < 250) // Rate limit attempts on getting pos to prevent stutters
+                else if (_posRefreshSw.ElapsedMilliseconds < 100) // Rate limit attempts on getting pos to prevent stutters
                 {
                     return false;
                 }
@@ -423,6 +554,9 @@ namespace eft_dma_radar
                     var transform = new Transform(TransformInternal, true);
                     _transform = transform;
                     Program.Log($"Player '{Name}' obtained new Position Transform OK.");
+                    _headTransform = new Transform(headTransform);
+                    _spineTransform = new Transform(spineTransform);
+                    _pelvisTransform = new Transform(pelvisTransform);
                 }
                 catch (Exception ex2)
                 {
@@ -585,6 +719,72 @@ namespace eft_dma_radar
                     }
                 }
                 Watchlist = new(watchlist); // Update ref
+            }
+        }
+
+        
+        public void ToggleMaxStamina()
+        {
+            if (Type == PlayerType.LocalPlayer)
+            {
+                var playerBody = Memory.ReadPtr(Base + Offsets.Player.Physical);
+                var stamina = Memory.ReadPtr(playerBody + Offsets.Physical.MaxStamina);
+                // TotalCapacity = { 0x10, 0x1c };
+                Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
+                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(10.0f));
+                stamina = Memory.ReadPtr(playerBody + Offsets.Physical.MaxOxygen);
+                // TotalCapacity = { 0x10, 0x1c };
+                Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
+                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(10.0f));
+                stamina = Memory.ReadPtr(playerBody + Offsets.Physical.MaxHandStamina);
+                // TotalCapacity = { 0x10, 0x1c };
+                Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
+                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(10.0f));
+            }
+        }
+
+        /// <summary>
+        /// set `ProceduralWeaponAnimation ] +0x28 (breath) ] + 0x0A4 (intensity:float)` to 0.0f (nosway)
+        /// and set `ProceduralWeaponAnimation ] +0x48 (shotingg) ] +0x40 (RecoilStrengthXy:vector2<float>)` to { 0, 0 }  and `]+0x48 (RecoilStrengthZ:vector2<float>)` to { 0, ??? } (i just write vector3 { 0,0,0 } to RecoilStrengthXy) (norecoil)
+        /// or just null the mask `ProceduralWeaponAnimation ] + 0xF8 (?: int32_t)`, idk is nospread is server sided
+        /// </summary>
+        public bool noRecoil = false;
+        internal void ToggleNoRecoil()
+        {
+            //Program.Log($"ToggleNoRecoil{noRecoil}");
+            if (Type == PlayerType.LocalPlayer && noRecoil)
+            {
+                try
+                {
+                
+                    var ProceduralWeaponAnimation = Memory.ReadPtr(Base + Offsets.Player.ProceduralWeaponAnimation);
+                    Memory.Write(ProceduralWeaponAnimation + 0x100, BitConverter.GetBytes(64u)); // mask
+                    var breath = Memory.ReadPtr(ProceduralWeaponAnimation + 0x28); // +0x28 (breath)
+                    Memory.Write(breath + 0x0A4, BitConverter.GetBytes(.0f)); // +0x0A4(intensity: float
+                    Memory.Write(breath + 0x0B8, new byte[] { 0x0, 0x0}); // +0x0B8(TremorOn: float + Fracture
+
+                    var shotingg = Memory.ReadPtr(ProceduralWeaponAnimation + 0x48); // +0x48 (shotingg)
+                    Memory.Write(shotingg + 0x40, new float[] { .0f, .0f, .0f }.SelectMany(f => BitConverter.GetBytes(f)).ToArray()); // +0x40 (RecoilStrengthXy:vector2<float>)` to { 0, 0 }  and `]+0x48 (RecoilStrengthZ:vector2<float>)` to { 0, ??? } (i just write vector3 { 0,0,0 } to RecoilStrengthXy) (norecoil)
+                    Memory.Write(shotingg + 0x6c, BitConverter.GetBytes(0L)); // +0x0A4(intensity: float
+                    Memory.Write(shotingg + 0x70, BitConverter.GetBytes(0L)); // +0x0A4(intensity: float
+                    //Memory.Write(shotingg + 0x74, BitConverter.GetBytes(0f)); // +0x0A4(intensity: float
+
+                    var skills = Memory.ReadPtr(Memory.ReadPtr(Base + Offsets.Player.Profile) + Offsets.Profile.Skills);
+                    var skill = Memory.ReadPtr(skills + Offsets.Skills.AttentionExamine);
+                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                    skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsLoadSpeed);
+                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                    skill = Memory.ReadPtr(skills + Offsets.Skills.PerceptionLootDot);
+                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                    skill = Memory.ReadPtr(skills + Offsets.Skills.AttentionLootSpeed);
+                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                    skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsUnLoadSpeed);
+                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+
+                } catch (Exception ex)
+                {
+                    Program.Log(ex.ToString());
+                }
             }
         }
         #endregion

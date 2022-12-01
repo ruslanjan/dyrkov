@@ -1,7 +1,10 @@
-﻿using System;
+﻿using eft_dma_radar.Source;
+using eft_dma_radar.Source.Tarkov;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.Numerics;
 
 namespace eft_dma_radar
 {
@@ -14,6 +17,7 @@ namespace eft_dma_radar
         private readonly ulong _unityBase;
         private GameObjectManager _gom;
         private ulong _localGameWorld;
+        private FPSCamera _fpsCamera;
         private LootManager _lootManager;
         private RegisteredPlayers _rgtPlayers;
         private GrenadeManager _grenadeManager;
@@ -34,9 +38,35 @@ namespace eft_dma_radar
         {
             get => _rgtPlayers?.Players;
         }
+        public Player LocalPlayer
+        {
+            get => LocalPlayer;
+        }
+
+        private object viewMatrixLock = new object();
+        public Matrix4x4 ViewMatrix
+        {
+            get
+            {
+                lock(viewMatrixLock)
+                {
+                    return ViewMatrix;
+                }
+            }
+            set
+            {
+                lock(viewMatrixLock)
+                {
+                    value = ViewMatrix;
+                }            }
+        }
         public LootManager Loot
         {
             get => _lootManager;
+        }
+        public FPSCamera FPSCamera
+        {
+            get => _fpsCamera;
         }
         public ReadOnlyCollection<Grenade> Grenades
         {
@@ -66,7 +96,9 @@ namespace eft_dma_radar
             {
                 _rgtPlayers.UpdateList(); // Check for new players, add to list
                 _rgtPlayers.UpdateAllPlayers(); // Update all player locations,etc.
+                ViewMatrix = FPSCamera.GetViewMatrix();
                 UpdateMisc(); // Loot, grenades, exfils,etc.
+                
             }
             catch (DMAShutdown)
             {
@@ -96,7 +128,7 @@ namespace eft_dma_radar
         {
             while (true)
             {
-                if (GetGOM() && GetLGW())
+                if (GetGOM() && GetLGW() && GetFPSCamera())
                 {
                     Thread.Sleep(1000);
                     break;
@@ -116,20 +148,25 @@ namespace eft_dma_radar
             var activeObject = Memory.ReadValue<BaseObject>(Memory.ReadPtr(activeObjectsPtr));
             var lastObject = Memory.ReadValue<BaseObject>(Memory.ReadPtr(lastObjectPtr));
 
+           
+
             if (activeObject.obj != 0x0)
             {
-                while (activeObject.obj != 0x0 && activeObject.obj != lastObject.obj)
+                bool f = true;
+                while (activeObject.obj != 0x0 && (f || activeObject.obj != lastObject.obj))
                 {
+                    f = false;
                     var objectNamePtr = Memory.ReadPtr(activeObject.obj + Offsets.GameObject.ObjectName);
                     var objectNameStr = Memory.ReadString(objectNamePtr, 64);
+                    
                     if (objectNameStr.Contains(objectName, StringComparison.OrdinalIgnoreCase))
                     {
-                        Program.Log($"Found object {objectNameStr}");
+                        Program.Log($"Found object {objectNameStr} 0x{activeObject.obj.ToString("X")}");
                         return activeObject.obj;
                     }
 
                     activeObject = Memory.ReadValue<BaseObject>(activeObject.nextObjectLink); // Read next object
-                }
+                } 
             }
             Program.Log($"Couldn't find object {objectName}");
             return 0;
@@ -185,6 +222,28 @@ namespace eft_dma_radar
                 return false;
             }
         }
+
+        /// <summary>
+        /// Gets FPS Camera.
+        /// </summary>
+        private bool GetFPSCamera()
+        {
+            try
+            {
+                ulong activeNodes = Memory.ReadPtr(_gom.MainCameraTaggedNodes);
+                ulong lastActiveNode = Memory.ReadPtr(_gom.LastMainCameraTaggedNode);
+                _fpsCamera = new FPSCamera(GetObjectFromList(activeNodes, lastActiveNode, "FPS Camera"));
+                if (_fpsCamera.p == 0) throw new Exception("Unable to find FPS Camera Object, likely not in raid.");
+                return true;
+            }
+            catch (DMAShutdown) { throw; }
+            catch (Exception ex)
+            {
+                Program.Log($"ERROR getting FPS Camera: {ex}");
+                return false;
+            }
+        }
+ 
 
         /// <summary>
         /// Loot, grenades, exfils,etc.

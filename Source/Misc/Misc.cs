@@ -123,7 +123,7 @@ namespace eft_dma_radar
             DefaultZoom = 100;
             UIScale = 100;
             LootEnabled = true;
-            AimViewEnabled = false;
+            AimViewEnabled = true;
             HideNames = false;
             LoggingEnabled = false;
             MaxDistance = 325;

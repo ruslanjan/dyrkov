@@ -14,7 +14,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Adjust this to achieve desired mem/sec performance. Higher = slower, Lower = faster.
         /// </summary>
-        private const int LOOP_DELAY = 200;
+        private const int LOOP_DELAY = 100;
 
         private static volatile char dk = (char)42;
         private static volatile bool _running = false;
@@ -49,6 +49,10 @@ namespace eft_dma_radar
         {
             get => _game?.Loot;
         }
+        public static Game Game
+        {
+            get => _game;
+        }
         public static ReadOnlyCollection<Grenade> Grenades
         {
             get => _game?.Grenades;
@@ -75,7 +79,7 @@ namespace eft_dma_radar
                 if (!File.Exists("mmap.txt"))
                 {
                     Program.Log("No MemMap, attempting to generate...");
-                    vmm = new Vmm("-printf", "-v", "-device", "FPGA");  
+                    vmm = new Vmm("-printf", "-v", "-device", "FPGA://algo=4");  
                     
                     GetMemMap();
                     vmm.Close(); // Close back down, re-init w/ map
@@ -198,7 +202,7 @@ namespace eft_dma_radar
                             Thread.Sleep(15000);
                         }
                     }
-                    Player.ResetKDManager(); // Reset KD Manager (hash will be diff)
+                    //Player.ResetKDManager(); // Reset KD Manager (hash will be diff)
                     while (true) // Game is running
                     {
                         _game = new Game(_unityBase);
@@ -527,6 +531,25 @@ namespace eft_dma_radar
                 throw new DMAException($"ERROR reading {typeof(T)} value at 0x{addr.ToString("X")}", ex);
             }
         }
+
+        /// <summary>
+        /// Read value type/struct from specified address.
+        /// </summary>
+        /// <typeparam name="T">Specified Value Type.</typeparam>
+        /// <param name="addr">Address to read from.</param>
+        public static bool Write(ulong addr, byte[] v)
+        {
+            try
+            {
+                ThrowIfDMAShutdown();
+                return vmm.MemWrite(_pid, addr, v);
+            }
+            catch (Exception ex)
+            {
+                throw new DMAException($"ERROR writing {v} value at 0x{addr.ToString("X")}", ex);
+            }
+        }
+
 
         /// <summary>
         /// Read null terminated string.

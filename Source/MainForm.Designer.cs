@@ -31,8 +31,36 @@ namespace eft_dma_radar
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            this.tabControl1 = new System.Windows.Forms.TabControl();
+            this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
+            this.tabPage4 = new System.Windows.Forms.TabPage();
+            this.listView_PmcHistory = new System.Windows.Forms.ListView();
+            this.columnHeader_Entry = new System.Windows.Forms.ColumnHeader();
+            this.columnHeader_ID = new System.Windows.Forms.ColumnHeader();
+            this.tabPage3 = new System.Windows.Forms.TabPage();
+            this.richTextBox_PlayersInfo = new System.Windows.Forms.RichTextBox();
+            this.tabPage2 = new System.Windows.Forms.TabPage();
+            this.LootWalls = new System.Windows.Forms.CheckBox();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.label_UIScale = new System.Windows.Forms.Label();
+            this.trackBar_UIScale = new System.Windows.Forms.TrackBar();
+            this.checkBox_HideNames = new System.Windows.Forms.CheckBox();
+            this.textBox_PrimTeamID = new System.Windows.Forms.TextBox();
+            this.label3 = new System.Windows.Forms.Label();
+            this.checkBox_Aimview = new System.Windows.Forms.CheckBox();
+            this.button_Restart = new System.Windows.Forms.Button();
+            this.checkBox_MapSetup = new System.Windows.Forms.CheckBox();
+            this.checkBox_Loot = new System.Windows.Forms.CheckBox();
+            this.label1 = new System.Windows.Forms.Label();
+            this.trackBar_Zoom = new System.Windows.Forms.TrackBar();
+            this.label2 = new System.Windows.Forms.Label();
+            this.trackBar_AimLength = new System.Windows.Forms.TrackBar();
+            this.button_Map = new System.Windows.Forms.Button();
             this.tabPage1 = new System.Windows.Forms.TabPage();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.NoRecoil = new System.Windows.Forms.CheckBox();
+            this.kek = new System.Windows.Forms.CheckBox();
+            this.MaxStamina = new System.Windows.Forms.CheckBox();
+            this.ThermalVision = new System.Windows.Forms.CheckBox();
             this.groupBox_Loot = new System.Windows.Forms.GroupBox();
             this.button_RefreshLoot = new System.Windows.Forms.Button();
             this.button_LootApply = new System.Windows.Forms.Button();
@@ -55,60 +83,298 @@ namespace eft_dma_radar
             this.label4 = new System.Windows.Forms.Label();
             this.textBox_mapX = new System.Windows.Forms.TextBox();
             this.label_Pos = new System.Windows.Forms.Label();
-            this.tabPage2 = new System.Windows.Forms.TabPage();
-            this.LootWalls = new System.Windows.Forms.CheckBox();
-            this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.label_UIScale = new System.Windows.Forms.Label();
-            this.trackBar_UIScale = new System.Windows.Forms.TrackBar();
-            this.checkBox_HideNames = new System.Windows.Forms.CheckBox();
-            this.textBox_PrimTeamID = new System.Windows.Forms.TextBox();
-            this.label3 = new System.Windows.Forms.Label();
-            this.checkBox_Aimview = new System.Windows.Forms.CheckBox();
-            this.button_Restart = new System.Windows.Forms.Button();
-            this.checkBox_MapSetup = new System.Windows.Forms.CheckBox();
-            this.checkBox_Loot = new System.Windows.Forms.CheckBox();
-            this.label1 = new System.Windows.Forms.Label();
-            this.trackBar_Zoom = new System.Windows.Forms.TrackBar();
-            this.label2 = new System.Windows.Forms.Label();
-            this.trackBar_AimLength = new System.Windows.Forms.TrackBar();
-            this.button_Map = new System.Windows.Forms.Button();
-            this.tabPage3 = new System.Windows.Forms.TabPage();
-            this.richTextBox_PlayersInfo = new System.Windows.Forms.RichTextBox();
-            this.tabPage4 = new System.Windows.Forms.TabPage();
-            this.listView_PmcHistory = new System.Windows.Forms.ListView();
-            this.columnHeader_Entry = new System.Windows.Forms.ColumnHeader();
-            this.columnHeader_ID = new System.Windows.Forms.ColumnHeader();
-            this.bindingSource1 = new System.Windows.Forms.BindingSource(this.components);
-            this.tabControl1.SuspendLayout();
-            this.tabPage1.SuspendLayout();
-            this.groupBox_Loot.SuspendLayout();
-            this.groupBox_MapSetup.SuspendLayout();
+            this.tabControl1 = new System.Windows.Forms.TabControl();
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
+            this.tabPage4.SuspendLayout();
+            this.tabPage3.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.groupBox1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar_UIScale)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar_Zoom)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar_AimLength)).BeginInit();
-            this.tabPage3.SuspendLayout();
-            this.tabPage4.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).BeginInit();
+            this.tabPage1.SuspendLayout();
+            this.panel1.SuspendLayout();
+            this.groupBox_Loot.SuspendLayout();
+            this.groupBox_MapSetup.SuspendLayout();
+            this.tabControl1.SuspendLayout();
             this.SuspendLayout();
             // 
-            // tabControl1
+            // tabPage4
             // 
-            this.tabControl1.Controls.Add(this.tabPage1);
-            this.tabControl1.Controls.Add(this.tabPage2);
-            this.tabControl1.Controls.Add(this.tabPage3);
-            this.tabControl1.Controls.Add(this.tabPage4);
-            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tabControl1.Location = new System.Drawing.Point(0, 0);
-            this.tabControl1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.tabControl1.Name = "tabControl1";
-            this.tabControl1.SelectedIndex = 0;
-            this.tabControl1.Size = new System.Drawing.Size(1527, 1415);
-            this.tabControl1.TabIndex = 8;
+            this.tabPage4.Controls.Add(this.listView_PmcHistory);
+            this.tabPage4.Location = new System.Drawing.Point(4, 29);
+            this.tabPage4.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.tabPage4.Name = "tabPage4";
+            this.tabPage4.Size = new System.Drawing.Size(1519, 1382);
+            this.tabPage4.TabIndex = 3;
+            this.tabPage4.Text = "Player History";
+            this.tabPage4.UseVisualStyleBackColor = true;
+            // 
+            // listView_PmcHistory
+            // 
+            this.listView_PmcHistory.AutoArrange = false;
+            this.listView_PmcHistory.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
+            this.columnHeader_Entry,
+            this.columnHeader_ID});
+            this.listView_PmcHistory.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.listView_PmcHistory.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.listView_PmcHistory.FullRowSelect = true;
+            this.listView_PmcHistory.GridLines = true;
+            this.listView_PmcHistory.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
+            this.listView_PmcHistory.Location = new System.Drawing.Point(0, 0);
+            this.listView_PmcHistory.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.listView_PmcHistory.MultiSelect = false;
+            this.listView_PmcHistory.Name = "listView_PmcHistory";
+            this.listView_PmcHistory.Size = new System.Drawing.Size(1519, 1382);
+            this.listView_PmcHistory.TabIndex = 0;
+            this.listView_PmcHistory.UseCompatibleStateImageBehavior = false;
+            this.listView_PmcHistory.View = System.Windows.Forms.View.Details;
+            // 
+            // columnHeader_Entry
+            // 
+            this.columnHeader_Entry.Text = "Entry";
+            this.columnHeader_Entry.Width = 200;
+            // 
+            // columnHeader_ID
+            // 
+            this.columnHeader_ID.Text = "ID";
+            this.columnHeader_ID.Width = 50;
+            // 
+            // tabPage3
+            // 
+            this.tabPage3.Controls.Add(this.richTextBox_PlayersInfo);
+            this.tabPage3.Location = new System.Drawing.Point(4, 29);
+            this.tabPage3.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.tabPage3.Name = "tabPage3";
+            this.tabPage3.Size = new System.Drawing.Size(1519, 1382);
+            this.tabPage3.TabIndex = 2;
+            this.tabPage3.Text = "Player Loadouts";
+            this.tabPage3.UseVisualStyleBackColor = true;
+            // 
+            // richTextBox_PlayersInfo
+            // 
+            this.richTextBox_PlayersInfo.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.richTextBox_PlayersInfo.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.richTextBox_PlayersInfo.Location = new System.Drawing.Point(0, 0);
+            this.richTextBox_PlayersInfo.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.richTextBox_PlayersInfo.Name = "richTextBox_PlayersInfo";
+            this.richTextBox_PlayersInfo.ReadOnly = true;
+            this.richTextBox_PlayersInfo.Size = new System.Drawing.Size(1519, 1382);
+            this.richTextBox_PlayersInfo.TabIndex = 0;
+            this.richTextBox_PlayersInfo.Text = "";
+            // 
+            // tabPage2
+            // 
+            this.tabPage2.Controls.Add(this.LootWalls);
+            this.tabPage2.Controls.Add(this.groupBox1);
+            this.tabPage2.Location = new System.Drawing.Point(4, 29);
+            this.tabPage2.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.tabPage2.Name = "tabPage2";
+            this.tabPage2.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.tabPage2.Size = new System.Drawing.Size(1519, 1382);
+            this.tabPage2.TabIndex = 1;
+            this.tabPage2.Text = "Settings";
+            this.tabPage2.UseVisualStyleBackColor = true;
+            // 
+            // LootWalls
+            // 
+            this.LootWalls.AutoSize = true;
+            this.LootWalls.Location = new System.Drawing.Point(665, 55);
+            this.LootWalls.Name = "LootWalls";
+            this.LootWalls.Size = new System.Drawing.Size(154, 24);
+            this.LootWalls.TabIndex = 9;
+            this.LootWalls.Text = "Loot through walls";
+            this.LootWalls.UseVisualStyleBackColor = true;
+            this.LootWalls.CheckedChanged += new System.EventHandler(this.lootWalls_CheckedChanged);
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.label_UIScale);
+            this.groupBox1.Controls.Add(this.trackBar_UIScale);
+            this.groupBox1.Controls.Add(this.checkBox_HideNames);
+            this.groupBox1.Controls.Add(this.textBox_PrimTeamID);
+            this.groupBox1.Controls.Add(this.label3);
+            this.groupBox1.Controls.Add(this.checkBox_Aimview);
+            this.groupBox1.Controls.Add(this.button_Restart);
+            this.groupBox1.Controls.Add(this.checkBox_MapSetup);
+            this.groupBox1.Controls.Add(this.checkBox_Loot);
+            this.groupBox1.Controls.Add(this.label1);
+            this.groupBox1.Controls.Add(this.trackBar_Zoom);
+            this.groupBox1.Controls.Add(this.label2);
+            this.groupBox1.Controls.Add(this.trackBar_AimLength);
+            this.groupBox1.Controls.Add(this.button_Map);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
+            this.groupBox1.Location = new System.Drawing.Point(3, 4);
+            this.groupBox1.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Padding = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.groupBox1.Size = new System.Drawing.Size(600, 1374);
+            this.groupBox1.TabIndex = 8;
+            this.groupBox1.TabStop = false;
+            this.groupBox1.Text = "Radar Config";
+            // 
+            // label_UIScale
+            // 
+            this.label_UIScale.AutoSize = true;
+            this.label_UIScale.Location = new System.Drawing.Point(438, 329);
+            this.label_UIScale.Name = "label_UIScale";
+            this.label_UIScale.Size = new System.Drawing.Size(85, 20);
+            this.label_UIScale.TabIndex = 28;
+            this.label_UIScale.Text = "UI Scale 1.0";
+            this.label_UIScale.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // trackBar_UIScale
+            // 
+            this.trackBar_UIScale.LargeChange = 10;
+            this.trackBar_UIScale.Location = new System.Drawing.Point(451, 353);
+            this.trackBar_UIScale.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.trackBar_UIScale.Maximum = 200;
+            this.trackBar_UIScale.Minimum = 50;
+            this.trackBar_UIScale.Name = "trackBar_UIScale";
+            this.trackBar_UIScale.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.trackBar_UIScale.Size = new System.Drawing.Size(56, 537);
+            this.trackBar_UIScale.TabIndex = 27;
+            this.trackBar_UIScale.Value = 100;
+            // 
+            // checkBox_HideNames
+            // 
+            this.checkBox_HideNames.AutoSize = true;
+            this.checkBox_HideNames.Location = new System.Drawing.Point(373, 201);
+            this.checkBox_HideNames.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.checkBox_HideNames.Name = "checkBox_HideNames";
+            this.checkBox_HideNames.Size = new System.Drawing.Size(142, 24);
+            this.checkBox_HideNames.TabIndex = 26;
+            this.checkBox_HideNames.Text = "Hide Names (F6)";
+            this.checkBox_HideNames.UseVisualStyleBackColor = true;
+            // 
+            // textBox_PrimTeamID
+            // 
+            this.textBox_PrimTeamID.Location = new System.Drawing.Point(50, 129);
+            this.textBox_PrimTeamID.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.textBox_PrimTeamID.MaxLength = 12;
+            this.textBox_PrimTeamID.Name = "textBox_PrimTeamID";
+            this.textBox_PrimTeamID.Size = new System.Drawing.Size(167, 27);
+            this.textBox_PrimTeamID.TabIndex = 25;
+            // 
+            // label3
+            // 
+            this.label3.AutoSize = true;
+            this.label3.Location = new System.Drawing.Point(50, 105);
+            this.label3.Name = "label3";
+            this.label3.Size = new System.Drawing.Size(185, 20);
+            this.label3.TabIndex = 22;
+            this.label3.Text = "Primary Teammate Acct ID";
+            // 
+            // checkBox_Aimview
+            // 
+            this.checkBox_Aimview.AutoSize = true;
+            this.checkBox_Aimview.Location = new System.Drawing.Point(221, 201);
+            this.checkBox_Aimview.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.checkBox_Aimview.Name = "checkBox_Aimview";
+            this.checkBox_Aimview.Size = new System.Drawing.Size(157, 24);
+            this.checkBox_Aimview.TabIndex = 19;
+            this.checkBox_Aimview.Text = "Show Aimview (F4)";
+            this.checkBox_Aimview.UseVisualStyleBackColor = true;
+            // 
+            // button_Restart
+            // 
+            this.button_Restart.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+            this.button_Restart.Location = new System.Drawing.Point(410, 44);
+            this.button_Restart.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.button_Restart.Name = "button_Restart";
+            this.button_Restart.Size = new System.Drawing.Size(93, 81);
+            this.button_Restart.TabIndex = 18;
+            this.button_Restart.Text = "Restart Game";
+            this.button_Restart.UseVisualStyleBackColor = true;
+            this.button_Restart.Click += new System.EventHandler(this.button_Restart_Click);
+            // 
+            // checkBox_MapSetup
+            // 
+            this.checkBox_MapSetup.AutoSize = true;
+            this.checkBox_MapSetup.Location = new System.Drawing.Point(50, 235);
+            this.checkBox_MapSetup.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.checkBox_MapSetup.Name = "checkBox_MapSetup";
+            this.checkBox_MapSetup.Size = new System.Drawing.Size(192, 24);
+            this.checkBox_MapSetup.TabIndex = 9;
+            this.checkBox_MapSetup.Text = "Show Map Setup Helper";
+            this.checkBox_MapSetup.UseVisualStyleBackColor = true;
+            this.checkBox_MapSetup.CheckedChanged += new System.EventHandler(this.checkBox_MapSetup_CheckedChanged);
+            // 
+            // checkBox_Loot
+            // 
+            this.checkBox_Loot.AutoSize = true;
+            this.checkBox_Loot.Location = new System.Drawing.Point(50, 201);
+            this.checkBox_Loot.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.checkBox_Loot.Name = "checkBox_Loot";
+            this.checkBox_Loot.Size = new System.Drawing.Size(130, 24);
+            this.checkBox_Loot.TabIndex = 17;
+            this.checkBox_Loot.Text = "Show Loot (F3)";
+            this.checkBox_Loot.UseVisualStyleBackColor = true;
+            this.checkBox_Loot.CheckedChanged += new System.EventHandler(this.checkBox_Loot_CheckedChanged);
+            // 
+            // label1
+            // 
+            this.label1.AutoSize = true;
+            this.label1.Location = new System.Drawing.Point(221, 289);
+            this.label1.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            this.label1.Name = "label1";
+            this.label1.Size = new System.Drawing.Size(169, 60);
+            this.label1.TabIndex = 16;
+            this.label1.Text = "Zoom\r\nF1/Mouse Whl Up = In\r\nF2/Mouse Whl Dn = Out";
+            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // trackBar_Zoom
+            // 
+            this.trackBar_Zoom.LargeChange = 1;
+            this.trackBar_Zoom.Location = new System.Drawing.Point(271, 353);
+            this.trackBar_Zoom.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.trackBar_Zoom.Maximum = 200;
+            this.trackBar_Zoom.Minimum = 1;
+            this.trackBar_Zoom.Name = "trackBar_Zoom";
+            this.trackBar_Zoom.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.trackBar_Zoom.Size = new System.Drawing.Size(56, 537);
+            this.trackBar_Zoom.TabIndex = 15;
+            this.trackBar_Zoom.Value = 100;
+            // 
+            // label2
+            // 
+            this.label2.AutoSize = true;
+            this.label2.Location = new System.Drawing.Point(88, 309);
+            this.label2.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
+            this.label2.Name = "label2";
+            this.label2.Size = new System.Drawing.Size(125, 40);
+            this.label2.TabIndex = 13;
+            this.label2.Text = "Player/Teammate\r\nAimline";
+            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            // 
+            // trackBar_AimLength
+            // 
+            this.trackBar_AimLength.LargeChange = 50;
+            this.trackBar_AimLength.Location = new System.Drawing.Point(119, 353);
+            this.trackBar_AimLength.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.trackBar_AimLength.Maximum = 1000;
+            this.trackBar_AimLength.Minimum = 10;
+            this.trackBar_AimLength.Name = "trackBar_AimLength";
+            this.trackBar_AimLength.Orientation = System.Windows.Forms.Orientation.Vertical;
+            this.trackBar_AimLength.Size = new System.Drawing.Size(56, 537);
+            this.trackBar_AimLength.SmallChange = 5;
+            this.trackBar_AimLength.TabIndex = 11;
+            this.trackBar_AimLength.Value = 500;
+            // 
+            // button_Map
+            // 
+            this.button_Map.Location = new System.Drawing.Point(50, 44);
+            this.button_Map.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.button_Map.Name = "button_Map";
+            this.button_Map.Size = new System.Drawing.Size(122, 36);
+            this.button_Map.TabIndex = 7;
+            this.button_Map.Text = "Toggle Map (F5)";
+            this.button_Map.UseVisualStyleBackColor = true;
+            this.button_Map.Click += new System.EventHandler(this.button_Map_Click);
             // 
             // tabPage1
             // 
+            this.tabPage1.Controls.Add(this.panel1);
             this.tabPage1.Controls.Add(this.groupBox_Loot);
             this.tabPage1.Controls.Add(this.groupBox_MapSetup);
             this.tabPage1.Location = new System.Drawing.Point(4, 29);
@@ -119,6 +385,61 @@ namespace eft_dma_radar
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "Radar";
             this.tabPage1.UseVisualStyleBackColor = true;
+            // 
+            // panel1
+            // 
+            this.panel1.Controls.Add(this.NoRecoil);
+            this.panel1.Controls.Add(this.kek);
+            this.panel1.Controls.Add(this.MaxStamina);
+            this.panel1.Controls.Add(this.ThermalVision);
+            this.panel1.Location = new System.Drawing.Point(398, 20);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(161, 131);
+            this.panel1.TabIndex = 14;
+            // 
+            // NoRecoil
+            // 
+            this.NoRecoil.AutoSize = true;
+            this.NoRecoil.Location = new System.Drawing.Point(3, 58);
+            this.NoRecoil.Name = "NoRecoil";
+            this.NoRecoil.Size = new System.Drawing.Size(92, 24);
+            this.NoRecoil.TabIndex = 15;
+            this.NoRecoil.Text = "NoRecoil";
+            this.NoRecoil.UseVisualStyleBackColor = true;
+            this.NoRecoil.CheckedChanged += new System.EventHandler(this.NoRecoil_CheckedChanged_1);
+            // 
+            // kek
+            // 
+            this.kek.AutoSize = true;
+            this.kek.Location = new System.Drawing.Point(3, 95);
+            this.kek.Name = "kek";
+            this.kek.Size = new System.Drawing.Size(53, 24);
+            this.kek.TabIndex = 13;
+            this.kek.Text = "kek";
+            this.kek.UseVisualStyleBackColor = true;
+            this.kek.CheckedChanged += new System.EventHandler(this.kek_CheckedChanged);
+            // 
+            // MaxStamina
+            // 
+            this.MaxStamina.AutoSize = true;
+            this.MaxStamina.Location = new System.Drawing.Point(3, 28);
+            this.MaxStamina.Name = "MaxStamina";
+            this.MaxStamina.Size = new System.Drawing.Size(113, 24);
+            this.MaxStamina.TabIndex = 14;
+            this.MaxStamina.Text = "MaxStamina";
+            this.MaxStamina.UseVisualStyleBackColor = true;
+            this.MaxStamina.CheckedChanged += new System.EventHandler(this.MaxStamina_CheckedChanged_1);
+            // 
+            // ThermalVision
+            // 
+            this.ThermalVision.AutoSize = true;
+            this.ThermalVision.Location = new System.Drawing.Point(3, 3);
+            this.ThermalVision.Name = "ThermalVision";
+            this.ThermalVision.Size = new System.Drawing.Size(129, 24);
+            this.ThermalVision.TabIndex = 13;
+            this.ThermalVision.Text = "Thermal Vision";
+            this.ThermalVision.UseVisualStyleBackColor = true;
+            this.ThermalVision.CheckedChanged += new System.EventHandler(this.ThermalVision_CheckedChanged_1);
             // 
             // groupBox_Loot
             // 
@@ -364,278 +685,19 @@ namespace eft_dma_radar
             this.label_Pos.TabIndex = 10;
             this.label_Pos.Text = "coords";
             // 
-            // tabPage2
+            // tabControl1
             // 
-            this.tabPage2.Controls.Add(this.LootWalls);
-            this.tabPage2.Controls.Add(this.groupBox1);
-            this.tabPage2.Location = new System.Drawing.Point(4, 29);
-            this.tabPage2.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.tabPage2.Name = "tabPage2";
-            this.tabPage2.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.tabPage2.Size = new System.Drawing.Size(1519, 1382);
-            this.tabPage2.TabIndex = 1;
-            this.tabPage2.Text = "Settings";
-            this.tabPage2.UseVisualStyleBackColor = true;
-            // 
-            // LootWalls
-            // 
-            this.LootWalls.AutoSize = true;
-            this.LootWalls.Location = new System.Drawing.Point(665, 55);
-            this.LootWalls.Name = "LootWalls";
-            this.LootWalls.Size = new System.Drawing.Size(154, 24);
-            this.LootWalls.TabIndex = 9;
-            this.LootWalls.Text = "Loot through walls";
-            this.LootWalls.UseVisualStyleBackColor = true;
-            this.LootWalls.CheckedChanged += new System.EventHandler(this.lootWalls_CheckedChanged);
-            // 
-            // groupBox1
-            // 
-            this.groupBox1.Controls.Add(this.label_UIScale);
-            this.groupBox1.Controls.Add(this.trackBar_UIScale);
-            this.groupBox1.Controls.Add(this.checkBox_HideNames);
-            this.groupBox1.Controls.Add(this.textBox_PrimTeamID);
-            this.groupBox1.Controls.Add(this.label3);
-            this.groupBox1.Controls.Add(this.checkBox_Aimview);
-            this.groupBox1.Controls.Add(this.button_Restart);
-            this.groupBox1.Controls.Add(this.checkBox_MapSetup);
-            this.groupBox1.Controls.Add(this.checkBox_Loot);
-            this.groupBox1.Controls.Add(this.label1);
-            this.groupBox1.Controls.Add(this.trackBar_Zoom);
-            this.groupBox1.Controls.Add(this.label2);
-            this.groupBox1.Controls.Add(this.trackBar_AimLength);
-            this.groupBox1.Controls.Add(this.button_Map);
-            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Left;
-            this.groupBox1.Location = new System.Drawing.Point(3, 4);
-            this.groupBox1.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
-            this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Padding = new System.Windows.Forms.Padding(5, 4, 5, 4);
-            this.groupBox1.Size = new System.Drawing.Size(600, 1374);
-            this.groupBox1.TabIndex = 8;
-            this.groupBox1.TabStop = false;
-            this.groupBox1.Text = "Radar Config";
-            // 
-            // label_UIScale
-            // 
-            this.label_UIScale.AutoSize = true;
-            this.label_UIScale.Location = new System.Drawing.Point(438, 329);
-            this.label_UIScale.Name = "label_UIScale";
-            this.label_UIScale.Size = new System.Drawing.Size(85, 20);
-            this.label_UIScale.TabIndex = 28;
-            this.label_UIScale.Text = "UI Scale 1.0";
-            this.label_UIScale.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // trackBar_UIScale
-            // 
-            this.trackBar_UIScale.LargeChange = 10;
-            this.trackBar_UIScale.Location = new System.Drawing.Point(451, 353);
-            this.trackBar_UIScale.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.trackBar_UIScale.Maximum = 200;
-            this.trackBar_UIScale.Minimum = 50;
-            this.trackBar_UIScale.Name = "trackBar_UIScale";
-            this.trackBar_UIScale.Orientation = System.Windows.Forms.Orientation.Vertical;
-            this.trackBar_UIScale.Size = new System.Drawing.Size(56, 537);
-            this.trackBar_UIScale.TabIndex = 27;
-            this.trackBar_UIScale.Value = 100;
-            // 
-            // checkBox_HideNames
-            // 
-            this.checkBox_HideNames.AutoSize = true;
-            this.checkBox_HideNames.Location = new System.Drawing.Point(373, 201);
-            this.checkBox_HideNames.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.checkBox_HideNames.Name = "checkBox_HideNames";
-            this.checkBox_HideNames.Size = new System.Drawing.Size(142, 24);
-            this.checkBox_HideNames.TabIndex = 26;
-            this.checkBox_HideNames.Text = "Hide Names (F6)";
-            this.checkBox_HideNames.UseVisualStyleBackColor = true;
-            // 
-            // textBox_PrimTeamID
-            // 
-            this.textBox_PrimTeamID.Location = new System.Drawing.Point(50, 129);
-            this.textBox_PrimTeamID.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.textBox_PrimTeamID.MaxLength = 12;
-            this.textBox_PrimTeamID.Name = "textBox_PrimTeamID";
-            this.textBox_PrimTeamID.Size = new System.Drawing.Size(167, 27);
-            this.textBox_PrimTeamID.TabIndex = 25;
-            // 
-            // label3
-            // 
-            this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(50, 105);
-            this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(185, 20);
-            this.label3.TabIndex = 22;
-            this.label3.Text = "Primary Teammate Acct ID";
-            // 
-            // checkBox_Aimview
-            // 
-            this.checkBox_Aimview.AutoSize = true;
-            this.checkBox_Aimview.Location = new System.Drawing.Point(221, 201);
-            this.checkBox_Aimview.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.checkBox_Aimview.Name = "checkBox_Aimview";
-            this.checkBox_Aimview.Size = new System.Drawing.Size(157, 24);
-            this.checkBox_Aimview.TabIndex = 19;
-            this.checkBox_Aimview.Text = "Show Aimview (F4)";
-            this.checkBox_Aimview.UseVisualStyleBackColor = true;
-            // 
-            // button_Restart
-            // 
-            this.button_Restart.Font = new System.Drawing.Font("Segoe UI", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.button_Restart.Location = new System.Drawing.Point(410, 44);
-            this.button_Restart.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.button_Restart.Name = "button_Restart";
-            this.button_Restart.Size = new System.Drawing.Size(93, 81);
-            this.button_Restart.TabIndex = 18;
-            this.button_Restart.Text = "Restart Game";
-            this.button_Restart.UseVisualStyleBackColor = true;
-            this.button_Restart.Click += new System.EventHandler(this.button_Restart_Click);
-            // 
-            // checkBox_MapSetup
-            // 
-            this.checkBox_MapSetup.AutoSize = true;
-            this.checkBox_MapSetup.Location = new System.Drawing.Point(50, 235);
-            this.checkBox_MapSetup.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.checkBox_MapSetup.Name = "checkBox_MapSetup";
-            this.checkBox_MapSetup.Size = new System.Drawing.Size(192, 24);
-            this.checkBox_MapSetup.TabIndex = 9;
-            this.checkBox_MapSetup.Text = "Show Map Setup Helper";
-            this.checkBox_MapSetup.UseVisualStyleBackColor = true;
-            this.checkBox_MapSetup.CheckedChanged += new System.EventHandler(this.checkBox_MapSetup_CheckedChanged);
-            // 
-            // checkBox_Loot
-            // 
-            this.checkBox_Loot.AutoSize = true;
-            this.checkBox_Loot.Location = new System.Drawing.Point(50, 201);
-            this.checkBox_Loot.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.checkBox_Loot.Name = "checkBox_Loot";
-            this.checkBox_Loot.Size = new System.Drawing.Size(130, 24);
-            this.checkBox_Loot.TabIndex = 17;
-            this.checkBox_Loot.Text = "Show Loot (F3)";
-            this.checkBox_Loot.UseVisualStyleBackColor = true;
-            this.checkBox_Loot.CheckedChanged += new System.EventHandler(this.checkBox_Loot_CheckedChanged);
-            // 
-            // label1
-            // 
-            this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(221, 289);
-            this.label1.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
-            this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(169, 60);
-            this.label1.TabIndex = 16;
-            this.label1.Text = "Zoom\r\nF1/Mouse Whl Up = In\r\nF2/Mouse Whl Dn = Out";
-            this.label1.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // trackBar_Zoom
-            // 
-            this.trackBar_Zoom.LargeChange = 1;
-            this.trackBar_Zoom.Location = new System.Drawing.Point(271, 353);
-            this.trackBar_Zoom.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.trackBar_Zoom.Maximum = 200;
-            this.trackBar_Zoom.Minimum = 1;
-            this.trackBar_Zoom.Name = "trackBar_Zoom";
-            this.trackBar_Zoom.Orientation = System.Windows.Forms.Orientation.Vertical;
-            this.trackBar_Zoom.Size = new System.Drawing.Size(56, 537);
-            this.trackBar_Zoom.TabIndex = 15;
-            this.trackBar_Zoom.Value = 100;
-            // 
-            // label2
-            // 
-            this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(88, 309);
-            this.label2.Margin = new System.Windows.Forms.Padding(5, 0, 5, 0);
-            this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(125, 40);
-            this.label2.TabIndex = 13;
-            this.label2.Text = "Player/Teammate\r\nAimline";
-            this.label2.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
-            // 
-            // trackBar_AimLength
-            // 
-            this.trackBar_AimLength.LargeChange = 50;
-            this.trackBar_AimLength.Location = new System.Drawing.Point(119, 353);
-            this.trackBar_AimLength.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
-            this.trackBar_AimLength.Maximum = 1000;
-            this.trackBar_AimLength.Minimum = 10;
-            this.trackBar_AimLength.Name = "trackBar_AimLength";
-            this.trackBar_AimLength.Orientation = System.Windows.Forms.Orientation.Vertical;
-            this.trackBar_AimLength.Size = new System.Drawing.Size(56, 537);
-            this.trackBar_AimLength.SmallChange = 5;
-            this.trackBar_AimLength.TabIndex = 11;
-            this.trackBar_AimLength.Value = 500;
-            // 
-            // button_Map
-            // 
-            this.button_Map.Location = new System.Drawing.Point(50, 44);
-            this.button_Map.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
-            this.button_Map.Name = "button_Map";
-            this.button_Map.Size = new System.Drawing.Size(122, 36);
-            this.button_Map.TabIndex = 7;
-            this.button_Map.Text = "Toggle Map (F5)";
-            this.button_Map.UseVisualStyleBackColor = true;
-            this.button_Map.Click += new System.EventHandler(this.button_Map_Click);
-            // 
-            // tabPage3
-            // 
-            this.tabPage3.Controls.Add(this.richTextBox_PlayersInfo);
-            this.tabPage3.Location = new System.Drawing.Point(4, 29);
-            this.tabPage3.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.tabPage3.Name = "tabPage3";
-            this.tabPage3.Size = new System.Drawing.Size(1519, 1382);
-            this.tabPage3.TabIndex = 2;
-            this.tabPage3.Text = "Player Loadouts";
-            this.tabPage3.UseVisualStyleBackColor = true;
-            // 
-            // richTextBox_PlayersInfo
-            // 
-            this.richTextBox_PlayersInfo.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.richTextBox_PlayersInfo.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.richTextBox_PlayersInfo.Location = new System.Drawing.Point(0, 0);
-            this.richTextBox_PlayersInfo.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.richTextBox_PlayersInfo.Name = "richTextBox_PlayersInfo";
-            this.richTextBox_PlayersInfo.ReadOnly = true;
-            this.richTextBox_PlayersInfo.Size = new System.Drawing.Size(1519, 1382);
-            this.richTextBox_PlayersInfo.TabIndex = 0;
-            this.richTextBox_PlayersInfo.Text = "";
-            // 
-            // tabPage4
-            // 
-            this.tabPage4.Controls.Add(this.listView_PmcHistory);
-            this.tabPage4.Location = new System.Drawing.Point(4, 29);
-            this.tabPage4.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.tabPage4.Name = "tabPage4";
-            this.tabPage4.Size = new System.Drawing.Size(1519, 1382);
-            this.tabPage4.TabIndex = 3;
-            this.tabPage4.Text = "Player History";
-            this.tabPage4.UseVisualStyleBackColor = true;
-            // 
-            // listView_PmcHistory
-            // 
-            this.listView_PmcHistory.AutoArrange = false;
-            this.listView_PmcHistory.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.columnHeader_Entry,
-            this.columnHeader_ID});
-            this.listView_PmcHistory.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.listView_PmcHistory.Font = new System.Drawing.Font("Arial", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
-            this.listView_PmcHistory.FullRowSelect = true;
-            this.listView_PmcHistory.GridLines = true;
-            this.listView_PmcHistory.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
-            this.listView_PmcHistory.Location = new System.Drawing.Point(0, 0);
-            this.listView_PmcHistory.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.listView_PmcHistory.MultiSelect = false;
-            this.listView_PmcHistory.Name = "listView_PmcHistory";
-            this.listView_PmcHistory.Size = new System.Drawing.Size(1519, 1382);
-            this.listView_PmcHistory.TabIndex = 0;
-            this.listView_PmcHistory.UseCompatibleStateImageBehavior = false;
-            this.listView_PmcHistory.View = System.Windows.Forms.View.Details;
-            // 
-            // columnHeader_Entry
-            // 
-            this.columnHeader_Entry.Text = "Entry";
-            this.columnHeader_Entry.Width = 200;
-            // 
-            // columnHeader_ID
-            // 
-            this.columnHeader_ID.Text = "ID";
-            this.columnHeader_ID.Width = 50;
+            this.tabControl1.Controls.Add(this.tabPage1);
+            this.tabControl1.Controls.Add(this.tabPage2);
+            this.tabControl1.Controls.Add(this.tabPage3);
+            this.tabControl1.Controls.Add(this.tabPage4);
+            this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tabControl1.Location = new System.Drawing.Point(0, 0);
+            this.tabControl1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.tabControl1.Name = "tabControl1";
+            this.tabControl1.SelectedIndex = 0;
+            this.tabControl1.Size = new System.Drawing.Size(1527, 1415);
+            this.tabControl1.TabIndex = 8;
             // 
             // MainForm
             // 
@@ -647,12 +709,9 @@ namespace eft_dma_radar
             this.Name = "MainForm";
             this.Text = "Dyrkov Pidar";
             this.Load += new System.EventHandler(this.MainForm_Load);
-            this.tabControl1.ResumeLayout(false);
-            this.tabPage1.ResumeLayout(false);
-            this.groupBox_Loot.ResumeLayout(false);
-            this.groupBox_Loot.PerformLayout();
-            this.groupBox_MapSetup.ResumeLayout(false);
-            this.groupBox_MapSetup.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
+            this.tabPage4.ResumeLayout(false);
+            this.tabPage3.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.tabPage2.PerformLayout();
             this.groupBox1.ResumeLayout(false);
@@ -660,48 +719,47 @@ namespace eft_dma_radar
             ((System.ComponentModel.ISupportInitialize)(this.trackBar_UIScale)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar_Zoom)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.trackBar_AimLength)).EndInit();
-            this.tabPage3.ResumeLayout(false);
-            this.tabPage4.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
+            this.tabPage1.ResumeLayout(false);
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
+            this.groupBox_Loot.ResumeLayout(false);
+            this.groupBox_Loot.PerformLayout();
+            this.groupBox_MapSetup.ResumeLayout(false);
+            this.groupBox_MapSetup.PerformLayout();
+            this.tabControl1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
 
         #endregion
-
-        private TabControl tabControl1;
-        private TabPage tabPage1;
-        private TabPage tabPage2;
-        private GroupBox groupBox1;
-        private Label label2;
-        private TrackBar trackBar_AimLength;
-        private Button button_Map;
-        private Label label_Pos;
-        private Label label1;
-        private TrackBar trackBar_Zoom;
-        private CheckBox checkBox_Loot;
-        private CheckBox checkBox_MapSetup;
-        private Button button_Restart;
-        private GroupBox groupBox_MapSetup;
-        private Button button_MapSetupApply;
-        private TextBox textBox_mapScale;
-        private Label label5;
-        private TextBox textBox_mapY;
-        private Label label4;
-        private TextBox textBox_mapX;
         private BindingSource bindingSource1;
-        private CheckBox checkBox_Aimview;
-        private CheckBox checkBox_MapFree;
-        private TabPage tabPage3;
-        private RichTextBox richTextBox_PlayersInfo;
+        private CheckBox checkBox1;
         private TabPage tabPage4;
         private ListView listView_PmcHistory;
         private ColumnHeader columnHeader_Entry;
         private ColumnHeader columnHeader_ID;
-        private Label label3;
-        private TextBox textBox_PrimTeamID;
+        private TabPage tabPage3;
+        private RichTextBox richTextBox_PlayersInfo;
+        private TabPage tabPage2;
+        private CheckBox LootWalls;
+        private GroupBox groupBox1;
+        private Label label_UIScale;
+        private TrackBar trackBar_UIScale;
         private CheckBox checkBox_HideNames;
+        private TextBox textBox_PrimTeamID;
+        private Label label3;
+        private CheckBox checkBox_Aimview;
+        private Button button_Restart;
+        private CheckBox checkBox_MapSetup;
+        private CheckBox checkBox_Loot;
+        private Label label1;
+        private TrackBar trackBar_Zoom;
+        private Label label2;
+        private TrackBar trackBar_AimLength;
+        private Button button_Map;
+        private TabPage tabPage1;
         private GroupBox groupBox_Loot;
+        private Button button_RefreshLoot;
         private Button button_LootApply;
         private Label label9;
         private TextBox textBox_LootFilterByName;
@@ -710,14 +768,24 @@ namespace eft_dma_radar
         private TextBox textBox_LootImpValue;
         private TextBox textBox_LootRegValue;
         private Label label6;
-        private Button button_Loot;
-        private Button button_RefreshLoot;
-        private Label label_UIScale;
-        private TrackBar trackBar_UIScale;
-        private CheckBox checkBox1;
-        private CheckBox LootWalls;
+        private GroupBox groupBox_MapSetup;
         private TextBox textBox_R;
         private Label label10;
+        private Button button_Loot;
+        private CheckBox checkBox_MapFree;
+        private Button button_MapSetupApply;
+        private TextBox textBox_mapScale;
+        private Label label5;
+        private TextBox textBox_mapY;
+        private Label label4;
+        private TextBox textBox_mapX;
+        private Label label_Pos;
+        private TabControl tabControl1;
+        private CheckBox kek;
+        private Panel panel1;
+        private CheckBox NoRecoil;
+        private CheckBox MaxStamina;
+        private CheckBox ThermalVision;
     }
 }
 

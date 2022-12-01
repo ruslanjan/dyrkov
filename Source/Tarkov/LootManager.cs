@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -35,6 +36,11 @@ namespace eft_dma_radar
         /// All tracked loot/corpses in Local Game World.
         /// </summary>
         private ReadOnlyCollection<LootItem> Loot { get; }
+
+        private string GetClassname(ulong obj)
+        {
+            return Memory.ReadString(Memory.ReadPtrChain(obj, new uint[] { 0x0, 0x0, 0x48 }), 64);
+        }
 
         #region Constructor
         public LootManager(ulong localGameWorld)
@@ -79,6 +85,7 @@ namespace eft_dma_radar
                     var interactiveClass = (ulong)map.Results[i][2].Result;
                     var gameObject = (ulong)map.Results[i][4].Result;
                     var name = (string)map.Results[i][6].Result;
+                    //Program.Log($"Loot:{name}");
                     if (name.Contains("script", StringComparison.OrdinalIgnoreCase))
                     {
                         //skip these. These are scripts which I think are things like landmines but not sure
@@ -105,11 +112,16 @@ namespace eft_dma_radar
                         //the WORST method to figure out if an item is a container...but no better solution now
                         bool container = _containers.Any(x => name.Contains(x, StringComparison.OrdinalIgnoreCase));
 
-                        var _itemOwner = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.ContainerItemOwner);
-                        if (_itemOwner != 0)
+                        try
                         {
-                            container = true;
+                            var _itemOwner = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.ContainerItemOwner);
+                            if (_itemOwner != 0)
+                            {
+                                container = true;
+                            }
                         }
+                        catch { }
+
 
                         //If the item is a Static Container like weapon boxes, barrels, caches, safes, airdrops etc
                         if (container)
@@ -141,9 +153,14 @@ namespace eft_dma_radar
                         //If the item is NOT a Static Container
                         else
                         {
+                            Program.Log(GetClassname(interactiveClass));
                             var item = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.LootItemBase); //EFT.InventoryLogic.Item
                             var itemTemplate = Memory.ReadPtr(item + Offsets.LootItemBase.ItemTemplate); //EFT.InventoryLogic.ItemTemplate
-                            bool questItem = Memory.ReadValue<bool>(itemTemplate + Offsets.ItemTemplate.IsQuestItem);
+                            bool questItem = false;
+                            try
+                            {
+                                questItem = Memory.ReadValue<bool>(itemTemplate + Offsets.ItemTemplate.IsQuestItem);
+                            } catch { }
 
                             //If NOT a quest item. Quest items are like the quest related things you need to find like the pocket watch or Jaeger's Letter etc. We want to ignore these quest items.
                             if (!questItem)
