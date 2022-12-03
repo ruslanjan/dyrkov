@@ -50,6 +50,7 @@
         public const uint IsMotionBlurred= 0xe3;
         public const uint IsGlitch = 0xe4;
         public const uint IsPixelated = 0xe5;
+        public const uint material = 0x90;
     }
     public struct ExfilController // -.GClass0B67
     {

@@ -544,7 +544,7 @@ namespace eft_dma_radar
             {
                 Program.Log($"ERROR getting Player '{Name}' Position: {ex}");
                 if (!_posRefreshSw.IsRunning) _posRefreshSw.Start();
-                else if (_posRefreshSw.ElapsedMilliseconds < 100) // Rate limit attempts on getting pos to prevent stutters
+                else if (_posRefreshSw.ElapsedMilliseconds < 15) // Rate limit attempts on getting pos to prevent stutters
                 {
                     return false;
                 }
@@ -756,13 +756,14 @@ namespace eft_dma_radar
             {
                 try
                 {
-                
                     var ProceduralWeaponAnimation = Memory.ReadPtr(Base + Offsets.Player.ProceduralWeaponAnimation);
-                    Memory.Write(ProceduralWeaponAnimation + 0x100, BitConverter.GetBytes(64u)); // mask
+                    Memory.Write(ProceduralWeaponAnimation + 0x100, BitConverter.GetBytes(1)); // mask
+                    // breath
                     var breath = Memory.ReadPtr(ProceduralWeaponAnimation + 0x28); // +0x28 (breath)
                     Memory.Write(breath + 0x0A4, BitConverter.GetBytes(.0f)); // +0x0A4(intensity: float
                     Memory.Write(breath + 0x0B8, new byte[] { 0x0, 0x0}); // +0x0B8(TremorOn: float + Fracture
 
+                    // shooting
                     var shotingg = Memory.ReadPtr(ProceduralWeaponAnimation + 0x48); // +0x48 (shotingg)
                     Memory.Write(shotingg + 0x40, new float[] { .0f, .0f, .0f }.SelectMany(f => BitConverter.GetBytes(f)).ToArray()); // +0x40 (RecoilStrengthXy:vector2<float>)` to { 0, 0 }  and `]+0x48 (RecoilStrengthZ:vector2<float>)` to { 0, ??? } (i just write vector3 { 0,0,0 } to RecoilStrengthXy) (norecoil)
                     Memory.Write(shotingg + 0x6c, BitConverter.GetBytes(0L)); // +0x0A4(intensity: float
@@ -774,7 +775,7 @@ namespace eft_dma_radar
                     Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
                     skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsLoadSpeed);
                     Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
-                    skill = Memory.ReadPtr(skills + Offsets.Skills.PerceptionLootDot);
+                      skill = Memory.ReadPtr(skills + Offsets.Skills.PerceptionLootDot);
                     Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
                     skill = Memory.ReadPtr(skills + Offsets.Skills.AttentionLootSpeed);
                     Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));

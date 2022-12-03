@@ -44,21 +44,23 @@ namespace eft_dma_radar
         }
 
         private object viewMatrixLock = new object();
+        private Matrix4x4 _viewMatrix;
         public Matrix4x4 ViewMatrix
         {
             get
             {
                 lock(viewMatrixLock)
                 {
-                    return ViewMatrix;
+                    return _viewMatrix;
                 }
             }
             set
             {
                 lock(viewMatrixLock)
                 {
-                    value = ViewMatrix;
-                }            }
+                    _viewMatrix = value;
+                }            
+            }
         }
         public LootManager Loot
         {

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Numerics;
 using System.Text;
@@ -20,15 +21,19 @@ namespace eft_dma_radar.Source.Tarkov
         }
 
         private bool thermal = false;
+        //private ulong mask = 0;
+
         public void ToggleThermalVision()
         {
-            Program.Log(this.GetViewMatrix().ToString());
             thermal = !thermal;
             if (thermal)
             {
+                //mask = Memory.ReadPtr(ThermalVision + Offsets.ThermalVision.material);
                 Memory.Write(ThermalVision + Offsets.ThermalVision.On, new byte[] { 0x1, 0x0, 0x0, 0x0, 0x0, 0x0,  });
+                Memory.Write(ThermalVision + Offsets.ThermalVision.material, BitConverter.GetBytes(0L));
             } else
             {
+                //mask = Memory.ReadPtr(ThermalVision + Offsets.ThermalVision.material);
                 Memory.Write(ThermalVision + Offsets.ThermalVision.On, new byte[] { 0x0 });
             }
         }

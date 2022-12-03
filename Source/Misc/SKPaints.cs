@@ -320,5 +320,51 @@ namespace eft_dma_radar
             FilterQuality = SKFilterQuality.High,
         };
         #endregion
+        #region Kek
+        public static readonly SKPaint Crosshair = new SKPaint()
+        {
+            Color = SKColors.Red,
+            StrokeWidth = 1f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = false,
+            FilterQuality = SKFilterQuality.High,
+        };
+        public static readonly SKPaint PaintPMCBox = new SKPaint()
+        {
+            Color = SKColors.Red,
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintScavBox = new SKPaint()
+        {
+            Color = SKColors.Yellow,
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint TextPMCBox = new SKPaint()
+        {
+            Color = SKColors.Red,
+            IsStroke = false,
+            TextSize = 12,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint TextScavBox = new SKPaint()
+        {
+            Color = SKColors.Yellow,
+            IsStroke = false,
+            TextSize = 12,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
+            FilterQuality = SKFilterQuality.High
+        };
+        #endregion
     }
 }

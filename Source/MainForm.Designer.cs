@@ -392,15 +392,15 @@ namespace eft_dma_radar
             this.panel1.Controls.Add(this.kek);
             this.panel1.Controls.Add(this.MaxStamina);
             this.panel1.Controls.Add(this.ThermalVision);
-            this.panel1.Location = new System.Drawing.Point(398, 20);
+            this.panel1.Location = new System.Drawing.Point(412, 8);
             this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(161, 131);
+            this.panel1.Size = new System.Drawing.Size(301, 84);
             this.panel1.TabIndex = 14;
             // 
             // NoRecoil
             // 
             this.NoRecoil.AutoSize = true;
-            this.NoRecoil.Location = new System.Drawing.Point(3, 58);
+            this.NoRecoil.Location = new System.Drawing.Point(17, 54);
             this.NoRecoil.Name = "NoRecoil";
             this.NoRecoil.Size = new System.Drawing.Size(92, 24);
             this.NoRecoil.TabIndex = 15;
@@ -411,7 +411,7 @@ namespace eft_dma_radar
             // kek
             // 
             this.kek.AutoSize = true;
-            this.kek.Location = new System.Drawing.Point(3, 95);
+            this.kek.Location = new System.Drawing.Point(149, 54);
             this.kek.Name = "kek";
             this.kek.Size = new System.Drawing.Size(53, 24);
             this.kek.TabIndex = 13;
@@ -422,7 +422,7 @@ namespace eft_dma_radar
             // MaxStamina
             // 
             this.MaxStamina.AutoSize = true;
-            this.MaxStamina.Location = new System.Drawing.Point(3, 28);
+            this.MaxStamina.Location = new System.Drawing.Point(17, 13);
             this.MaxStamina.Name = "MaxStamina";
             this.MaxStamina.Size = new System.Drawing.Size(113, 24);
             this.MaxStamina.TabIndex = 14;
@@ -433,7 +433,7 @@ namespace eft_dma_radar
             // ThermalVision
             // 
             this.ThermalVision.AutoSize = true;
-            this.ThermalVision.Location = new System.Drawing.Point(3, 3);
+            this.ThermalVision.Location = new System.Drawing.Point(149, 13);
             this.ThermalVision.Name = "ThermalVision";
             this.ThermalVision.Size = new System.Drawing.Size(129, 24);
             this.ThermalVision.TabIndex = 13;

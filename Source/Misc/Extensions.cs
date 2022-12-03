@@ -83,53 +83,103 @@ namespace eft_dma_radar
         /// <summary>
         /// Gets drawing paintbrush based on Player Type.
         /// </summary>
-        public static SKPaint GetPaint(this Player player)
+        public static SKPaint GetPaint(this Player player, bool radar=true)
         {
-            switch (player.Type)
+            if (radar)
             {
-                case PlayerType.LocalPlayer:
-                    return SKPaints.PaintLocalPlayer;
-                case PlayerType.Teammate:
-                    return SKPaints.PaintTeammate;
-                case PlayerType.PMC:
-                    return SKPaints.PaintPMC;
-                case PlayerType.AIScav:
-                    return SKPaints.PaintScav;
-                case PlayerType.AIRaider:
-                    return SKPaints.PaintRaider;
-                case PlayerType.AIBoss:
-                    return SKPaints.PaintBoss;
-                case PlayerType.PScav:
-                    return SKPaints.PaintPScav;
-                case PlayerType.SpecialPlayer:
-                    return SKPaints.PaintSpecial;
-                default:
-                    return SKPaints.PaintPMC;
+                switch (player.Type)
+                {
+                    case PlayerType.LocalPlayer:
+                        return SKPaints.PaintLocalPlayer;
+                    case PlayerType.Teammate:
+                        return SKPaints.PaintTeammate;
+                    case PlayerType.PMC:
+                        return SKPaints.PaintPMC;
+                    case PlayerType.AIScav:
+                        return SKPaints.PaintScav;
+                    case PlayerType.AIRaider:
+                        return SKPaints.PaintRaider;
+                    case PlayerType.AIBoss:
+                        return SKPaints.PaintBoss;
+                    case PlayerType.PScav:
+                        return SKPaints.PaintPScav;
+                    case PlayerType.SpecialPlayer:
+                        return SKPaints.PaintSpecial;
+                    default:
+                        return SKPaints.PaintPMC;
+                }
+            } else
+            {
+                switch (player.Type)
+                {
+                    case PlayerType.LocalPlayer:
+                        return SKPaints.PaintLocalPlayer;
+                    case PlayerType.Teammate:
+                        return SKPaints.PaintTeammate;
+                    case PlayerType.PMC:
+                        return SKPaints.PaintPMCBox;
+                    case PlayerType.AIScav:
+                        return SKPaints.PaintScavBox;
+                    case PlayerType.AIRaider:
+                        return SKPaints.PaintRaider;
+                    case PlayerType.AIBoss:
+                        return SKPaints.PaintBoss;
+                    case PlayerType.PScav:
+                        return SKPaints.PaintPScav;
+                    case PlayerType.SpecialPlayer:
+                        return SKPaints.PaintSpecial;
+                    default:
+                        return SKPaints.PaintPMCBox;
+                }
             }
         }
         /// <summary>
         /// Gets text paintbrush based on Player Type.
         /// </summary>
-        public static SKPaint GetText(this Player player)
+        public static SKPaint GetText(this Player player, bool isRadar=true)
         {
-            switch (player.Type)
+            if (isRadar)
             {
-                case PlayerType.Teammate:
-                    return SKPaints.TextTeammate;
-                case PlayerType.PMC:
-                    return SKPaints.TextPMC;
-                case PlayerType.AIScav:
-                    return SKPaints.TextScav;
-                case PlayerType.AIRaider:
-                    return SKPaints.TextRaider;
-                case PlayerType.AIBoss:
-                    return SKPaints.TextBoss;
-                case PlayerType.PScav:
-                    return SKPaints.TextWhite;
-                case PlayerType.SpecialPlayer:
-                    return SKPaints.TextSpecial;
-                default:
-                    return SKPaints.TextPMC;
+                switch (player.Type)
+                {
+                    case PlayerType.Teammate:
+                        return SKPaints.TextTeammate;
+                    case PlayerType.PMC:
+                        return SKPaints.TextPMC;
+                    case PlayerType.AIScav:
+                        return SKPaints.TextScav;
+                    case PlayerType.AIRaider:
+                        return SKPaints.TextRaider;
+                    case PlayerType.AIBoss:
+                        return SKPaints.TextBoss;
+                    case PlayerType.PScav:
+                        return SKPaints.TextWhite;
+                    case PlayerType.SpecialPlayer:
+                        return SKPaints.TextSpecial;
+                    default:
+                        return SKPaints.TextPMC;
+                }
+            } else
+            {
+                switch (player.Type)
+                {
+                    case PlayerType.Teammate:
+                        return SKPaints.TextTeammate;
+                    case PlayerType.PMC:
+                        return SKPaints.TextPMCBox;
+                    case PlayerType.AIScav:
+                        return SKPaints.TextScavBox;
+                    case PlayerType.AIRaider:
+                        return SKPaints.TextRaider;
+                    case PlayerType.AIBoss:
+                        return SKPaints.TextBoss;
+                    case PlayerType.PScav:
+                        return SKPaints.TextWhite;
+                    case PlayerType.SpecialPlayer:
+                        return SKPaints.TextSpecial;
+                    default:
+                        return SKPaints.TextPMCBox;
+                }
             }
         }
 

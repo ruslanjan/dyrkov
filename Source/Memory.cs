@@ -6,6 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 using vmmsharp;
+using static vmmsharp.Vmm;
 
 namespace eft_dma_radar
 {
@@ -22,6 +23,7 @@ namespace eft_dma_radar
         private static volatile bool _ready = false;
         private static readonly Thread _worker;
         private static uint _pid;
+        private static MAP_MODULEENTRY _unityPlayerModule;
         private static ulong _unityBase;
         private static Vmm vmm;
         private static Game _game;
@@ -158,7 +160,9 @@ namespace eft_dma_radar
             try
             {
                 ThrowIfDMAShutdown();
+                _unityPlayerModule = vmm.Map_GetModuleFromName(_pid, "UnityPlayer.dll");
                 _unityBase = vmm.ProcessGetModuleBase(_pid, "UnityPlayer.dll");
+
                 if (_unityBase == 0) throw new DMAException("Unable to obtain Base Module Address. Game may not be running");
                 else
                 {

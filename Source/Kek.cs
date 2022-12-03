@@ -1,41 +1,40 @@
-﻿using eft_dma_radar.Source.Tarkov;
-using Offsets;
-using OpenTK.Input;
+﻿using Gma.System.MouseKeyHook;
 using SkiaSharp;
 using SkiaSharp.Views.Desktop;
-using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
-using System.Drawing;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Xml.Linq;
-using static eft_dma_radar.Player;
-using static vmmsharp.lc;
 using Timer = System.Windows.Forms.Timer;
 
 namespace eft_dma_radar.Source
 {
-    
+
     public partial class Kek : Form
     {
         [DllImport("user32.dll")]
-        private static extern int SetWindowLong(IntPtr hWnd, int nIndex, int dwNewLong);
+        private static extern long SetWindowLongA(IntPtr hWnd, int nIndex, long dwNewLong);
         [DllImport("user32.dll", SetLastError = true)]
-        private static extern int GetWindowLong(IntPtr hWnd, int nIndex);
+        private static extern long GetWindowLongA(IntPtr hWnd, int nIndex);
         [DllImport("user32.dll", SetLastError = true)]
         static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, UInt32 uFlags);
         [DllImport("user32.dll", SetLastError = true)]
         private static extern IntPtr GetWindow(IntPtr hWnd, GetWindowType uCmd);
         [DllImport("user32.dll", SetLastError = true)]
         static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+        [StructLayout(LayoutKind.Sequential)]
+        public struct MARGINS
+        {
+            public int Left;
+            public int Right;
+            public int Top;
+            public int Bottom;
+        }
+
+        [DllImport("dwmapi.dll")]
+        public static extern int DwmExtendFrameIntoClientArea(IntPtr hWnd, ref MARGINS pMargins);
 
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
@@ -98,13 +97,14 @@ namespace eft_dma_radar.Source
         public const string WINDOW_NAME = "EscapeFromTarkov";
         IntPtr handle = FindWindow(null, WINDOW_NAME);
         RECT rect = new RECT();
-
+        
         Graphics g;
         Pen pen = new Pen(Color.Red);
         Pen gpen = new Pen(Color.Green);
         Pen dpen = new Pen(Color.Brown);
         private readonly Stopwatch _fpsWatch = new();
-        private int _fps = 0;
+        private int _fps = 0; // temp
+        private int fps = 0;
         readonly Config _config;
         private SKGLControl _canvas;
         private object _renderLock = new();
@@ -118,20 +118,27 @@ namespace eft_dma_radar.Source
         }
 
         private static Kek instance;
+        public static Kek kek;
+        private bool showLoot = true;
 
         public Kek()
         {
+            if (kek is not null)
+            {
+                throw new Exception("Kek already created");
+            }
             _config = Program.Config;
             InitializeComponent();
-
+            kek = this;
 
         }
 
         private void Kek_Load(object sender, EventArgs e)
         {
             instance = this;
-            this.BackColor = Color.Wheat;
-            this.TransparencyKey = Color.Wheat;
+            //this.BackColor = Color.Wheat;
+            //this.TransparencyKey = Color.Wheat;
+            //this.Size = new Size(2560, 1440);
             //this.TopMost = true;
             //this.TopLevel = true;
             //this.Focus();
@@ -139,8 +146,11 @@ namespace eft_dma_radar.Source
             this.DoubleBuffered = true;
             this.FormBorderStyle = FormBorderStyle.None;
 
-            Kek_Shown(sender, e);
+            // register global hook
+            // risky!
+            //this.RegisterHooks();
 
+            // Canvas
             _canvas = new SKGLControl()
             {
                 Size = new Size(50, 50),
@@ -154,61 +164,225 @@ namespace eft_dma_radar.Source
 
 
             Timer tmr = new Timer();
-            tmr.Interval = 10;   // milliseconds
+            tmr.Interval = 2000;   // milliseconds
             tmr.Tick += TmrTick;  // set handler
-            tmr.Start();
+            //tmr.Start();
 
 
 
             Timer ftmr = new Timer();
             ftmr.Interval = 2000;   // milliseconds
             ftmr.Tick += fTmrTick;  // set handler
-            ftmr.Start();
+            //ftmr.Start();
 
             _fpsWatch.Start();
 
         }
 
-        private long ticks = 0;
+        [DllImport("user32.dll")]
+        static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, uint dwFlags);
+
+        public const int GWL_EXSTYLE = -20;
+        public const int WS_EX_LAYERED = 0x80000;
+        public const int LWA_ALPHA = 0x2;
+        public const int LWA_COLORKEY = 0x1;
+
+
+        async private void Kek_Shown(object sender, EventArgs e)
+        {
+            long initialStyle = GetWindowLongA(this.Handle, -20);
+            SetWindowLongA(this.Handle, -20, initialStyle | WS_EX_LAYERED | 0x20L | 0x08000000L);
+            handle = FindWindow(null, WINDOW_NAME);
+
+            MARGINS marg = new MARGINS() { Left = 0, Right = 0, Top = 2560, Bottom = 1440 };
+            DwmExtendFrameIntoClientArea(this.Handle, ref marg);
+
+            SetLayeredWindowAttributes(this.Handle, 0, 255, LWA_ALPHA);
+
+            GetWindowRect(handle, out rect);
+            this.Size = new Size(rect.Right - rect.Left, rect.Bottom - rect.Top);
+            this.Top = rect.Top;
+            this.Left = rect.Left;
+
+            while (_canvas.GRContext is null) await Task.Delay(1);
+            _canvas.GRContext.SetResourceCacheLimit(503316480); // Fixes low FPS on big maps
+            while (true)
+            {
+                //await Task.Run(() => Thread.SpinWait(8*50000)); // High performance async delay
+                await Task.Run(() => Thread.Sleep(10));
+                
+                _canvas.Refresh(); // draw next frame
+            }
+        }
+
+        [DllImport("user32.dll")]
+        static extern ushort GetAsyncKeyState(int vKey);
+
+        public static bool IsKeyPushedDown(Keys vKey)
+        {
+            return 0 != (GetAsyncKeyState((int)vKey) & 0x8000);
+        }
+
+        private bool[] inputMask = new bool[] { false, false, false, false };
+        private void ProcessInput()
+        {
+            var i = 0;
+            if (IsKeyPushedDown(Keys.F2) && inputMask[i])
+            {
+                inputMask[i] = false;
+                Memory.Game.FPSCamera.ToggleThermalVision();
+            }
+            else if (!IsKeyPushedDown(Keys.F2) && !inputMask[i]) inputMask[i] = true;
+            i++;
+            if (IsKeyPushedDown(Keys.F3) && inputMask[i])
+            {
+                inputMask[i] = false;
+                showLoot = !showLoot;
+            }
+            else if (!IsKeyPushedDown(Keys.F3) && !inputMask[i]) inputMask[i] = true;
+            i++;
+            if (IsKeyPushedDown(Keys.F4) && inputMask[i])
+            {
+                inputMask[i] = false;
+                LocalPlayer.ToggleMaxStamina(); LocalPlayer.noRecoil = !LocalPlayer.noRecoil;
+            }
+            else if (!IsKeyPushedDown(Keys.F4) && !inputMask[i]) inputMask[i] = true;
+            i++;
+            if (IsKeyPushedDown(Keys.F5) && inputMask[i])
+            {
+
+                inputMask[i] = false;
+                // set window over target
+                if (handle.ToInt64() == 0)
+                {
+                    handle = FindWindow(null, WINDOW_NAME);
+                }
+                this.BringToFront();
+                MARGINS marg = new MARGINS() { Left = 0, Right = 0, Top = 2560, Bottom = 1440 };
+                DwmExtendFrameIntoClientArea(this.Handle, ref marg);
+            }
+            else if (!IsKeyPushedDown(Keys.F5) && !inputMask[i]) inputMask[i] = true;
+        }
+
 
         private void TmrTick(object sender, EventArgs e)  //run this logic each timer tick
         {
-            this.Invalidate();  // move image across screen, picture box is control so no repaint needed
+            //this.Invalidate();  // move image across screen, picture box is control so no repaint needed
+            // set window over target
+            this.BringToFront();
 
         }
 
         private void fTmrTick(object sender, EventArgs e)  //run this logic each timer tick
         {
-           
+
+        }
+
+        private new void BringToFront()
+        {
+            if (handle.ToInt64() == 0)
+            {
+                handle = FindWindow(null, WINDOW_NAME);
+            }
+            IntPtr windowOverTarget = GetWindow(handle, GetWindowType.GW_HWNDPREV);
+            SetWindowPos(this.Handle, windowOverTarget, 0, 0, 0, 0, 0x0002 | 0x0001 | 0x0010); // SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
         }
 
         private void Canvas_PaintSurface(object sender, SKPaintGLSurfaceEventArgs e)
         {
-            lock (_renderLock) // Acquire lock on 'Render Resources'
+            SKSurface surface = e.Surface;
+            SKCanvas canvas = surface.Canvas;
+            canvas.Clear(SKColors.Transparent);
+            if (_fpsWatch.ElapsedMilliseconds >= 1000)
             {
-                if (_fpsWatch.ElapsedMilliseconds >= 1000)
-                {
-                    _canvas.GRContext.PurgeResources(); // Seems to fix mem leak issue on increasing resource 
-                    _fpsWatch.Restart();
-                    _fps = 0;
-                }
-                else _fps++;
-                SKSurface surface = e.Surface;
-                SKCanvas canvas = surface.Canvas;
-                canvas.Clear(SKColors.Wheat);
-                try
-                {
-
-                }
-                catch { }
+                this.BringToFront();
+                _canvas.GRContext.PurgeResources(); // Seems to fix mem leak issue on increasing resource 
+                _fpsWatch.Restart();
+                fps = _fps;
+                _fps = 0;
+                
             }
-        }
-        public void DrawPlayerKek(SKCanvas canvas, Player player, Matrix4x4 view_matrix, Player source_player)
-        {
-            var radians = player.Rotation.X.ToRadians();
-            SKPaint paint = player.GetPaint();
+            else _fps++;
+            canvas.DrawText($"FPS: {fps}", 10, 20, SKPaints.TextImportantLoot);
+            ProcessInput();
+            try
+            {
+                //this.BringToFront();
+                if (Memory.InGame && Memory.Players != null)
+                {
+                    var players = AllPlayers.Select(p => p.Value);
+                    var sourcePlayer = LocalPlayer;
+                    var view_matrix = Memory.Game.ViewMatrix;
+                    if (players is null || sourcePlayer is null)
+                    {
+                        return;
+                    }
 
-            if (player.Type == PlayerType.LocalPlayer) continue; // don't draw self
+                    try
+                    {
+                        if (sourcePlayer is not null && sourcePlayer.IsActive && sourcePlayer.IsAlive)
+                        {
+                            if (players is not null)
+                            {
+                                foreach (var player in players)
+                                {
+                                    try
+                                    {
+                                        if (player.Type == PlayerType.LocalPlayer) continue; // don't draw self
+                                        this.DrawPlayerKek(canvas, player, view_matrix, sourcePlayer);
+                                    }
+                                    catch { }
+                                }
+                            }
+                        }
+                        if (Memory.Loot != null && Memory.Loot.Filter != null && showLoot)
+                        {
+                            foreach (var item in Memory.Loot.Filter)
+                            {
+                                this.DrawLoot(canvas, item, view_matrix, sourcePlayer);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+             if (Memory.InGame && Memory.Players != null)
+            this.drawCrosshair(canvas);
+        }
+
+        private void drawCrosshair(SKCanvas canvas)
+        {
+            var m = new Vector2(this.Width / 2, this.Height / 2);
+            canvas.DrawLine(m.X - 5, m.Y, m.X + 5, m.Y, SKPaints.Crosshair);
+            canvas.DrawLine(m.X, m.Y - 5, m.X, m.Y + 5, SKPaints.Crosshair);
+        }
+
+        public void DrawLoot(SKCanvas canvas, LootItem item, Matrix4x4 view_matrix, Player sourcePlayer)
+        {
+            var important = item.Important || Math.Max(item.Item.avg24hPrice, item.Item.traderPrice) >= _config.MinImportantLootValue;
+            SKPaint paint = important ? SKPaints.PaintImportantLoot : SKPaints.PaintLoot;
+            SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLoot;
+
+
+            var itemPos = item.Position;
+            float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
+            if (dist > 150)
+                return;
+            Vector2 pos;
+            if (!w2s(view_matrix, new Vector3(itemPos.X, itemPos.Z, itemPos.Y), out pos))
+            {
+                return;
+            }
+            canvas.DrawText(item.Label, pos.X, pos.Y, text);
+        }
+
+        public void DrawPlayerKek(SKCanvas canvas, Player player, Matrix4x4 view_matrix, Player sourcePlayer)
+        {
+            SKPaint paint = player.GetPaint(false);
+            SKPaint text = player.GetText(false);
+
+            if (player.Type == PlayerType.LocalPlayer) return; // don't draw self
             var playerPos = player.Position;
             var headPos = player.HeadPos;
             var spinePos = player.SpinePos;
@@ -216,9 +390,9 @@ namespace eft_dma_radar.Source
 
             float dist = Vector3.Distance(sourcePlayer.Position, playerPos);
 
-            var bone_matrix = Memory.ReadPtrChain(player.Base, Offsets.Player.bone_matrix);
-            var headTransform = Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)133) * 0x8));
-            headPos = new Transform(player.headTransform).GetPosition();
+            //var bone_matrix = Memory.ReadPtrChain(player.Base, Offsets.Player.bone_matrix);
+            //var headTransform = Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)133) * 0x8));
+            //headPos = new Transform(player.headTransform).GetPosition();
 
             Vector2 pos;
             if (!w2s(view_matrix, new Vector3(playerPos.X, playerPos.Z, playerPos.Y), out pos))
@@ -229,7 +403,10 @@ namespace eft_dma_radar.Source
             {
                 return;
             }
-            canvas.DrawRect(player.Name, drawFont, drawBrush, pos.X, pos.Y);
+            var health = player.IsAlive ? player.Health : 0;
+            canvas.DrawText($"{player.Name} {health} {(int)dist}", pos.X, pos.Y, text);
+            if (!player.IsActive || !player.IsAlive)
+                return;
 
             // Base - Head height
             Vector2 headScreen;
@@ -244,7 +421,7 @@ namespace eft_dma_radar.Source
                 h *= -1;
 
             h = pos.Y - headScreen.Y;
-            canvas.DrawRect(hpen, headScreen.X - h / 8 / 2, headScreen.Y - h / 8 / 2, h / 8, h / 8, paint);
+            canvas.DrawRect(headScreen.X - h / 8 / 2, headScreen.Y - h / 8 / 2, h / 8, h / 8, paint);
 
             // debug
             if (false)
@@ -280,20 +457,8 @@ namespace eft_dma_radar.Source
                 return;
             }
             h = pos.Y - headScreen.Y;
-            
+
             canvas.DrawRect(headScreen.X - h / 2 / 2, headScreen.Y, h / 2, h, paint);
-        }
-
-        void Kek_Paint(object sender, PaintEventArgs e)
-        {
-
-
-            //g = e.Graphics;
-            Program.Log($"draw_kek");
-            //g.DrawRectangle(pen, 50, 50, 150, 150);
-            //g.Clear(Color.Wheat);
-            //draw_kek();
-            //Invalidate();
         }
 
         bool w2s(Matrix4x4 view_matrix, Vector3 pos, out Vector2 screen)
@@ -319,145 +484,7 @@ namespace eft_dma_radar.Source
             return true;
         }
 
-        Font drawFont = new Font("Arial", 7);
-        SolidBrush drawBrush = new SolidBrush(Color.Red);
-        SolidBrush lootDrawBrush = new SolidBrush(Color.White);
-        SolidBrush epicLootDrawBrush = new SolidBrush(Color.SkyBlue);
 
-        Pen hpen = new Pen(Color.Yellow);
-        void draw_kek()
-        {
-
-            if (Memory.InGame && Memory.Players != null)
-            {
-                if (handle.ToInt64() == 0)
-                {
-                    handle = FindWindow(null, WINDOW_NAME);
-                }
-                IntPtr windowOverTarget = GetWindow(handle, GetWindowType.GW_HWNDPREV);
-                SetWindowPos(this.Handle, windowOverTarget, 0, 0, 0, 0, 0x0002 | 0x0001 | 0x0010); // SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE
-                g.DrawRectangle(gpen, this.Width / 2 - 5, this.Height / 2 - 5, 10, 10);
-                var players = Memory.Game.Players.ToList().Select(p => p.Value);
-                if (players is null || players.ToList().Where(p => p.Type == PlayerType.LocalPlayer).ToList().Count == 0)
-                {
-                    return;
-                }
-
-                try
-                {
-                    var sourcePlayer = LocalPlayer;
-                    var camera = Memory.Game.FPSCamera;
-                    var view_matrix = ViewMatrix;
-                    if (sourcePlayer is not null && sourcePlayer.IsActive && sourcePlayer.IsAlive)
-                    {
-                        if (players is not null)
-                        {
-                            foreach (var player in players)
-                            {
-                                if (player.Type == PlayerType.LocalPlayer) continue; // don't draw self
-                                var playerPos = player.Position;
-                                var headPos = player.HeadPos;
-                                var spinePos = player.SpinePos;
-                                var pelvisPos = player.PelvisPos;
-                                float dist = Vector3.Distance(sourcePlayer.Position, playerPos);
-
-                                var bone_matrix = Memory.ReadPtrChain(player.Base, Offsets.Player.bone_matrix);
-                                var headTransform = Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)133) * 0x8));
-                                headPos = new Transform(player.headTransform).GetPosition();
-
-                                Vector2 pos;
-                                if (!w2s(view_matrix, new Vector3(playerPos.X, playerPos.Z, playerPos.Y), out pos))
-                                {
-                                    continue;
-                                }
-                                if (pos.X == 0 || pos.Y == 0 || pos.X > this.Width || pos.Y > this.Height)
-                                {
-                                    continue;
-                                }
-                                g.DrawString(player.Name, drawFont, drawBrush, pos.X, pos.Y);
-
-                                // Base - Head height
-                                Vector2 headScreen;
-                                if (!w2s(view_matrix, new Vector3(headPos.X, headPos.Z, headPos.Y), out headScreen))
-                                {
-                                    continue;
-                                }
-                                g.DrawRectangle(hpen, headScreen.X, headScreen.Y, 3, 3);
-                                var h = pos.Y - headScreen.Y;
-                                h *= 0.7f;
-                                if (h < 0)
-                                    h *= -1;
-
-                                h = pos.Y - headScreen.Y;
-                                g.DrawRectangle(hpen, headScreen.X - h / 8 / 2, headScreen.Y - h / 8 / 2, h / 8, h / 8);
-
-                                // debug
-                                if (false)
-                                {
-                                    // Lfoot
-                                    /*headTransform = Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)94) * 0x8));
-                                    p = new Transform(Memory.ReadPtr(headTransform + 0x10)).GetPosition();
-                                    if (w2s(view_matrix, new Vector3(p.X, p.Z, p.Y), out headScreen))
-                                    {
-                                        g.DrawRectangle(hpen, headScreen.X - h / 8 / 2, headScreen.Y - h / 8 / 2, h / 8, h / 8);
-                                    }*/
-                                }
-
-                                // Spine
-                                Vector2 spineScreen;
-                                if (w2s(view_matrix, new Vector3(spinePos.X, spinePos.Z, spinePos.Y), out spineScreen))
-                                {
-                                    g.DrawRectangle(hpen, spineScreen.X - h / 8 / 2, spineScreen.Y - h / 8 / 2, h / 8, h / 8);
-                                }
-
-                                // Pelvis
-                                Vector2 pelvisScreen;
-                                if (w2s(view_matrix, new Vector3(pelvisPos.X, pelvisPos.Z, pelvisPos.Y), out pelvisScreen))
-                                {
-                                    g.DrawRectangle(hpen, pelvisScreen.X - h / 8 / 2, pelvisScreen.Y - h / 8 / 2, h / 8, h / 8);
-                                }
-
-
-                                // bounding bugx, sorry
-                                headPos.Z += 0.2f;
-                                if (!w2s(view_matrix, new Vector3(headPos.X, headPos.Z, headPos.Y), out headScreen))
-                                {
-                                    continue;
-                                }
-                                h = pos.Y - headScreen.Y;
-                                g.DrawRectangle(dpen, headScreen.X - h / 2 / 2, headScreen.Y, h / 2, h);
-                                //g.DrawRectangle(dpen, Math.Min(ps.X, pos.X), Math.Min(ps.Y, pos.Y), (Math.Max(ps.X, pos.X) - Math.Min(ps.X, pos.X)) * 2, Math.Max(ps.Y, pos.Y) - Math.Min(ps.Y, pos.Y));
-
-                                //g.DrawRectangle(dpen, ps.X - 0.2f * (1.0f / h)/2.0f, ps.Y, 0.2f * (1.0f / h), h);
-
-                            }
-                        }
-                        if (Memory.Loot != null && Memory.Loot.Filter != null && _config.LootEnabled && false)
-                        {
-                            foreach (var item in Memory.Loot.Filter)
-                            {
-                                var position = item.Position;
-                                Vector2 pos;
-                                if (!w2s(view_matrix, new Vector3(position.X, position.Z, position.Y), out pos))
-                                {
-                                    continue;
-                                }
-                                if (!item.Important && item.Item.avg24hPrice < 80000)
-                                    g.DrawString(item.Label, drawFont, lootDrawBrush, pos.X, pos.Y);
-                                else
-                                    g.DrawString(item.Label, drawFont, epicLootDrawBrush, pos.X, pos.Y);
-                            }
-                        }
-
-                        // draw crosshair at end
-
-                    }
-                }
-                catch { }
-                //g.DrawRectangle(pen, 50, 50, 150, 150);
-            }
-        }
-        
 
         private enum GetWindowType : uint
         {
@@ -511,26 +538,15 @@ namespace eft_dma_radar.Source
             GW_ENABLEDPOPUP = 6
         }
 
-        private void Kek_Shown(object sender, EventArgs e)
-        {
-            int initialStyle = GetWindowLong(this.Handle, -20);
-            SetWindowLong(this.Handle, -20, initialStyle | 0x80000 | 0x20);
-            handle = FindWindow(null, WINDOW_NAME);
-
-            GetWindowRect(handle, out rect);
-            this.Size = new Size(rect.Right - rect.Left, rect.Bottom - rect.Top);
-            this.Top = rect.Top;
-            this.Left = rect.Left;
-        }
 
         private void Kek_MouseEnter(object sender, EventArgs e)
         {
-            
+
         }
 
         internal static void redraw()
         {
-            if (instance != null && Memory.InGame)
+            if (instance != null && !Memory.InGame)
             {
                 instance.Invalidate();
             }
@@ -539,6 +555,19 @@ namespace eft_dma_radar.Source
         private void Kek_KeyPress(object sender, KeyPressEventArgs e)
         {
             //if (e.GetType() == typeof(KeyPressEventArgs))
+            Program.Log($"ke pressed{e.ToString()}");
         }
+
+        protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+        {
+            if (keyData == (Keys.F1))
+            {
+                Program.Log("pressed F1");
+                return true;
+            }
+
+            return base.ProcessCmdKey(ref msg, keyData);
+        }
+
     }
 }

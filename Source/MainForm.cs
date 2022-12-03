@@ -139,7 +139,8 @@ namespace eft_dma_radar
             _mapCanvas.GRContext.SetResourceCacheLimit(503316480); // Fixes low FPS on big maps
             while (true)
             {
-                await Task.Run(() => Thread.SpinWait(50000)); // High performance async delay
+                //await Task.Run(() => Thread.SpinWait(8 * 50000)); // High performance async delay
+                await Task.Run(() => Thread.Sleep(20));
                 _mapCanvas.Refresh(); // draw next frame
             }
         }
@@ -1208,15 +1209,14 @@ namespace eft_dma_radar
 
         }
 
-        private static Kek KekForm;
         private Thread kekWorker;
         private void kek_CheckedChanged(object sender, EventArgs e)
         {
-            if (KekForm == null)
+            if (Kek.kek == null)
             {
                 kekWorker = new Thread(() =>
                 {
-                    KekForm = new Kek();
+                    var KekForm = new Kek();
                     KekForm.ShowDialog();
                 })
                 {
@@ -1225,15 +1225,15 @@ namespace eft_dma_radar
                 };
                 kekWorker.Start();
             }
-            if (KekForm != null)
+            if (Kek.kek != null)
             {
                 if (kek.Checked)
                 {
-                    KekForm.Show();
+                    Kek.kek.Invoke(new MethodInvoker(Kek.kek.Show));
                 }
                 else
                 {
-                    KekForm.Hide();
+                    Kek.kek.Invoke(new MethodInvoker(Kek.kek.Hide));
                 }
             }
         }

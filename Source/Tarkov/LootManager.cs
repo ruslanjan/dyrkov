@@ -60,7 +60,7 @@ namespace eft_dma_radar
             var round5 = map.AddRound();
             var round6 = map.AddRound();
             var round7 = map.AddRound();
-            Program.Log("Parsing loot...");
+            Program.Log($"found {countLootListObjects} potential loot objects\nParsing loot...");
             for (int i = 0; i < countLootListObjects; i++)
             {
                 var lootObjectsEntity = round1.AddEntry(i, 0, lootListEntity + Offsets.UnityListBase.Start + (ulong)(0x8 * i), typeof(ulong));
@@ -153,7 +153,7 @@ namespace eft_dma_radar
                         //If the item is NOT a Static Container
                         else
                         {
-                            Program.Log(GetClassname(interactiveClass));
+                            //Program.Log(GetClassname(interactiveClass));
                             var item = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.LootItemBase); //EFT.InventoryLogic.Item
                             var itemTemplate = Memory.ReadPtr(item + Offsets.LootItemBase.ItemTemplate); //EFT.InventoryLogic.ItemTemplate
                             bool questItem = false;
