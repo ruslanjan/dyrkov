@@ -205,6 +205,14 @@ namespace eft_dma_radar
             Typeface = SKTypeface.FromFamilyName("Arial"),
             FilterQuality = SKFilterQuality.High
         };
+        public static readonly SKPaint DarkTextbg = new SKPaint()
+        {
+            Color = SKColors.Black.WithAlpha(0x90),
+            StrokeWidth = 10,
+            Style = SKPaintStyle.StrokeAndFill,
+            IsAntialias = false,
+            FilterQuality = SKFilterQuality.High
+        };
         #endregion
 
         #region Aimview Paints

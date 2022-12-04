@@ -4,9 +4,11 @@ using SkiaSharp.Views.Desktop;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
+using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using static System.Net.Mime.MediaTypeNames;
 using Timer = System.Windows.Forms.Timer;
 
 namespace eft_dma_radar.Source
@@ -223,7 +225,7 @@ namespace eft_dma_radar.Source
             return 0 != (GetAsyncKeyState((int)vKey) & 0x8000);
         }
 
-        private bool[] inputMask = new bool[] { false, false, false, false };
+        private bool[] inputMask = new bool[5];
         private void ProcessInput()
         {
             var i = 0;
@@ -233,22 +235,25 @@ namespace eft_dma_radar.Source
                 Memory.Game.FPSCamera.ToggleThermalVision();
             }
             else if (!IsKeyPushedDown(Keys.F2) && !inputMask[i]) inputMask[i] = true;
-            i++;
+
+            i = 1;
             if (IsKeyPushedDown(Keys.F3) && inputMask[i])
             {
                 inputMask[i] = false;
                 showLoot = !showLoot;
             }
             else if (!IsKeyPushedDown(Keys.F3) && !inputMask[i]) inputMask[i] = true;
-            i++;
+
+            i = 2;
             if (IsKeyPushedDown(Keys.F4) && inputMask[i])
             {
                 inputMask[i] = false;
                 LocalPlayer.ToggleMaxStamina(); LocalPlayer.noRecoil = !LocalPlayer.noRecoil;
             }
             else if (!IsKeyPushedDown(Keys.F4) && !inputMask[i]) inputMask[i] = true;
-            i++;
-            if (IsKeyPushedDown(Keys.F5) && inputMask[i])
+
+            i = 3;
+            if (IsKeyPushedDown(Keys.Alt) && IsKeyPushedDown(Keys.F5) && inputMask[i])
             {
 
                 inputMask[i] = false;
@@ -261,7 +266,18 @@ namespace eft_dma_radar.Source
                 MARGINS marg = new MARGINS() { Left = 0, Right = 0, Top = 2560, Bottom = 1440 };
                 DwmExtendFrameIntoClientArea(this.Handle, ref marg);
             }
+            else if (!IsKeyPushedDown(Keys.Alt) && !IsKeyPushedDown(Keys.F5) && !inputMask[i]) inputMask[i] = true;
+
+            i = 4;
+            if (IsKeyPushedDown(Keys.F5) && inputMask[i])
+            {
+
+                inputMask[i] = false;
+                if (LocalPlayer is not null)
+                    LocalPlayer.IsScope = !LocalPlayer.IsScope;
+            }
             else if (!IsKeyPushedDown(Keys.F5) && !inputMask[i]) inputMask[i] = true;
+
         }
 
 
@@ -303,7 +319,7 @@ namespace eft_dma_radar.Source
                 
             }
             else _fps++;
-            canvas.DrawText($"FPS: {fps}", 10, 20, SKPaints.TextImportantLoot);
+            this.DrawHud(canvas);
             ProcessInput();
             try
             {
@@ -313,10 +329,14 @@ namespace eft_dma_radar.Source
                     var players = AllPlayers.Select(p => p.Value);
                     var sourcePlayer = LocalPlayer;
                     var view_matrix = Memory.Game.ViewMatrix;
+                    var view_optic_matrix = Memory.Game.ViewOpticMatrix;
                     if (players is null || sourcePlayer is null)
                     {
                         return;
                     }
+
+                    if (sourcePlayer.IsAiming && sourcePlayer.IsScope)
+                        view_matrix = view_optic_matrix;
 
                     try
                     {
@@ -337,10 +357,7 @@ namespace eft_dma_radar.Source
                         }
                         if (Memory.Loot != null && Memory.Loot.Filter != null && showLoot)
                         {
-                            foreach (var item in Memory.Loot.Filter)
-                            {
-                                this.DrawLoot(canvas, item, view_matrix, sourcePlayer);
-                            }
+                            this.DrawLoot(canvas, Memory.Loot.Filter, view_matrix, sourcePlayer);
                         }
                     }
                     catch { }
@@ -351,6 +368,19 @@ namespace eft_dma_radar.Source
             this.drawCrosshair(canvas);
         }
 
+        private void DrawHud(SKCanvas canvas)
+        {
+            canvas.DrawText($"FPS: {fps}", 10, 20, SKPaints.TextImportantLoot);
+            if (LocalPlayer is not null)
+            {
+                var i = 1;
+                var LineHeight = 16;
+                canvas.DrawText($"IsScope?: {LocalPlayer.IsScope}", 10, 20 + i * LineHeight + 5, SKPaints.TextImportantLoot);
+                i++;
+                canvas.DrawText($"IsNoRecoil?: {LocalPlayer.noRecoil}", 10, 20 + i * LineHeight + 5, SKPaints.TextImportantLoot);
+            }
+        }
+
         private void drawCrosshair(SKCanvas canvas)
         {
             var m = new Vector2(this.Width / 2, this.Height / 2);
@@ -358,23 +388,70 @@ namespace eft_dma_radar.Source
             canvas.DrawLine(m.X, m.Y - 5, m.X, m.Y + 5, SKPaints.Crosshair);
         }
 
-        public void DrawLoot(SKCanvas canvas, LootItem item, Matrix4x4 view_matrix, Player sourcePlayer)
+        public void DrawLoot(SKCanvas canvas, ReadOnlyCollection<LootItem> items, Matrix4x4 view_matrix, Player sourcePlayer)
         {
-            var important = item.Important || Math.Max(item.Item.avg24hPrice, item.Item.traderPrice) >= _config.MinImportantLootValue;
-            SKPaint paint = important ? SKPaints.PaintImportantLoot : SKPaints.PaintLoot;
-            SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLoot;
+            List<Tuple<LootItem, Vector2>> points = new List<Tuple<LootItem, Vector2>>();
 
 
-            var itemPos = item.Position;
-            float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
-            if (dist > 150)
-                return;
-            Vector2 pos;
-            if (!w2s(view_matrix, new Vector3(itemPos.X, itemPos.Z, itemPos.Y), out pos))
+            foreach (var item in items)
+            {
+                var important = item.Important || Math.Max(item.Item.avg24hPrice, item.Item.traderPrice) >= _config.MinImportantLootValue;
+                SKPaint paint = important ? SKPaints.PaintImportantLoot : SKPaints.PaintLoot;
+                SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLoot;
+
+                var itemPos = item.Position;
+                float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
+                if (dist > 150f)
+                    continue;
+                Vector2 pos;
+                if (!w2s(view_matrix, new Vector3(itemPos.X, itemPos.Z, itemPos.Y), out pos))
+                {
+                    continue;
+                }
+                if (Vector2.Distance(new Vector2(this.Width / 2, this.Height/2), pos) < 50)
+                {
+                    points.Add(new Tuple<LootItem, Vector2>(item, pos));
+                } else
+                {
+                    canvas.DrawText($"{item.Label} : {(int)dist}", pos.X, pos.Y, text);
+                }
+            }
+            if (points.Count == 0)
             {
                 return;
             }
-            canvas.DrawText(item.Label, pos.X, pos.Y, text);
+            points.Sort((a, b) =>
+            {
+                if (a.Item2.Y < b.Item2.Y)
+                {
+                    return -1;
+                } if (a.Item2.Y > b.Item2.Y)
+                {
+                    return 1;
+                }
+                {
+                    return 0;
+                }
+            });
+            {
+                // loot in the center
+                Vector2 pos = points[0].Item2;
+                var LineHeight = 16;
+                canvas.DrawRect(pos.X, pos.Y - 10, LineHeight * (points.Select(p => p.Item1.Label.Length).Max() + 6), 16 * points.Count, SKPaints.DarkTextbg);
+                foreach (var i in points)
+                {
+                    var item = i.Item1;
+                    var important = item.Important || Math.Max(item.Item.avg24hPrice, item.Item.traderPrice) >= _config.MinImportantLootValue;
+                    SKPaint paint = important ? SKPaints.PaintImportantLoot : SKPaints.PaintLoot;
+                    SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLoot;
+
+                    var itemPos = item.Position;
+                    float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
+                    canvas.DrawText($"{item.Label} | {(int)dist}", pos.X, pos.Y, text);
+                    pos.Y += 15;
+                }
+
+            }
         }
 
         public void DrawPlayerKek(SKCanvas canvas, Player player, Matrix4x4 view_matrix, Player sourcePlayer)
@@ -421,7 +498,7 @@ namespace eft_dma_radar.Source
                 h *= -1;
 
             h = pos.Y - headScreen.Y;
-            canvas.DrawRect(headScreen.X - h / 8 / 2, headScreen.Y - h / 8 / 2, h / 8, h / 8, paint);
+            canvas.DrawCircle(headScreen.X, headScreen.Y, h / 9, paint);
 
             // debug
             if (false)
@@ -439,26 +516,75 @@ namespace eft_dma_radar.Source
             Vector2 spineScreen;
             if (w2s(view_matrix, new Vector3(spinePos.X, spinePos.Z, spinePos.Y), out spineScreen))
             {
-                canvas.DrawRect(spineScreen.X - h / 8 / 2, spineScreen.Y - h / 8 / 2, h / 8, h / 8, paint);
+                canvas.DrawRect(spineScreen.X - 1.5f, spineScreen.Y - 1.5f, 3, 3, paint);
             }
 
             // Pelvis
             Vector2 pelvisScreen;
             if (w2s(view_matrix, new Vector3(pelvisPos.X, pelvisPos.Z, pelvisPos.Y), out pelvisScreen))
             {
-                canvas.DrawRect(pelvisScreen.X - h / 8 / 2, pelvisScreen.Y - h / 8 / 2, h / 8, h / 8, paint);
+                canvas.DrawRect(pelvisScreen.X - 1.5f, pelvisScreen.Y - 1.5f, 3, 3, paint);
             }
 
 
             // bounding bugx, sorry
             headPos.Z += 0.2f;
-            if (!w2s(view_matrix, new Vector3(headPos.X, headPos.Z, headPos.Y), out headScreen))
+            Vector2 topHeadScreen;
+            if (!w2s(view_matrix, new Vector3(headPos.X, headPos.Z, headPos.Y), out topHeadScreen))
             {
                 return;
             }
-            h = pos.Y - headScreen.Y;
+            h = pos.Y - topHeadScreen.Y;
 
-            canvas.DrawRect(headScreen.X - h / 2 / 2, headScreen.Y, h / 2, h, paint);
+            canvas.DrawRect(topHeadScreen.X - h / 2 / 2, topHeadScreen.Y, h / 2, h, paint);
+
+            var bonesScreen = new Dictionary<Player.bones, Vector2>();
+            foreach (var b in Player.TargetBones)
+            {
+                Vector3 Pos = player.getBonePose(b);
+                Vector2 bpos;
+                if (!w2s(view_matrix, new Vector3(Pos.X, Pos.Z, Pos.Y), out bpos))
+                {
+                    continue;
+                }
+                bonesScreen[b] = bpos;
+            }
+
+            //skeleton
+            SKPath path = new SKPath();
+
+            path.MoveTo(headScreen.X, headScreen.Y);
+            path.LineTo(bonesScreen[Player.bones.HumanNeck].X, bonesScreen[Player.bones.HumanNeck].Y);
+            path.LineTo(spineScreen.X, spineScreen.Y);
+            path.LineTo(pelvisScreen.X, pelvisScreen.Y);
+            
+            path.MoveTo(bonesScreen[Player.bones.HumanNeck].X, bonesScreen[Player.bones.HumanNeck].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLCollarbone].X, bonesScreen[Player.bones.HumanLCollarbone].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLUpperarm].X, bonesScreen[Player.bones.HumanLUpperarm].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLForearm1].X, bonesScreen[Player.bones.HumanLForearm1].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLPalm].X, bonesScreen[Player.bones.HumanLPalm].Y);
+            
+            path.MoveTo(bonesScreen[Player.bones.HumanNeck].X, bonesScreen[Player.bones.HumanNeck].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRCollarbone].X, bonesScreen[Player.bones.HumanRCollarbone].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRUpperarm].X, bonesScreen[Player.bones.HumanRUpperarm].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRForearm1].X, bonesScreen[Player.bones.HumanRForearm1].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRPalm].X, bonesScreen[Player.bones.HumanRPalm].Y);
+
+            path.MoveTo(pelvisScreen.X, pelvisScreen.Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLThigh1].X, bonesScreen[Player.bones.HumanLThigh1].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLThigh2].X, bonesScreen[Player.bones.HumanLThigh2].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLCalf].X, bonesScreen[Player.bones.HumanLCalf].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanLFoot].X, bonesScreen[Player.bones.HumanLFoot].Y);
+
+            path.MoveTo(pelvisScreen.X, pelvisScreen.Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRThigh1].X, bonesScreen[Player.bones.HumanRThigh1].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRThigh2].X, bonesScreen[Player.bones.HumanRThigh2].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRCalf].X, bonesScreen[Player.bones.HumanRCalf].Y);
+            path.LineTo(bonesScreen[Player.bones.HumanRFoot].X, bonesScreen[Player.bones.HumanRFoot].Y);
+
+
+            canvas.DrawPath(path, paint);
+
         }
 
         bool w2s(Matrix4x4 view_matrix, Vector3 pos, out Vector2 screen)
@@ -478,6 +604,18 @@ namespace eft_dma_radar.Source
 
             float x = Vector3.Dot(right, pos) + view_matrix.M41;
             float y = Vector3.Dot(up, pos) + view_matrix.M42;
+
+            if (LocalPlayer.IsAiming && LocalPlayer.IsScope)
+            {
+                float angle_rad_half = ((float)Math.PI / 180f) * 35f * 0.5f;
+                float angle_ctg = (float)(Math.Cos(angle_rad_half) / Math.Sin(angle_rad_half));
+
+                var aspect_ratio = 16f/9f;
+                x /= angle_ctg * aspect_ratio * 0.5f;
+                y /= angle_ctg * 0.5f;
+            }
+
+            
 
             screen = new Vector2((this.Width / 2) * (1.0f + x / w), ((this.Height / 2) * (1.0f - y / w)));
 

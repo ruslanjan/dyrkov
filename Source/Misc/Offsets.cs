@@ -1,4 +1,7 @@
-﻿namespace Offsets
+﻿using System;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.TextBox;
+
+namespace Offsets
 {
     public struct UnityList
     {
@@ -23,6 +26,7 @@
     public struct ModuleBase
     {
         public const uint GameObjectManager = 0x17FFD28; // to eft_dma_radar.GameObjectManager
+        public const uint AllCameras = 0x179F500;
     }
     public struct GameObject
     {
@@ -33,6 +37,33 @@
     public struct GameWorld
     {
         public static readonly uint[] To_LocalGameWorld = new uint[] { GameObject.ObjectClass, 0x18, 0x28 };
+    }
+
+    public struct MainApp
+    {
+        // MainApplication(Parent ClientApplication) -> _backEnd -> \uE00B (class214_0) -> BackEndConfig -> Config -> Inertia.
+        public static readonly uint[] ToConfig = new uint[] { 
+            0x28, /* _backEnd */  // class213
+            0x48, // class214_0 0x58
+            0x138,//0x110, // BackendConfigClass \uE510
+            0x10 // Config GClass1173 \uE553
+        };
+    }
+
+    public struct Config
+    {
+        public const uint Inertia = 0xC8; // \uE02B
+    }
+
+    public struct Inertia
+    {
+        public const uint BaseJumpPenaltyDuration = 0x4C; // float
+        public const uint DurationPower = 0x50; // float
+        public const uint BaseJumpPenalty = 0x54; // float
+        public const uint PenaltyPower = 0x58; // float
+        public const uint MoveTimeRange = 0xF4; // Vector2
+        public const uint FallThreshold = 0x20; // float
+        public const uint MinDirectionBlendTime = 0xf0; // float
     }
     public struct LocalGameWorld // -.ClientLocalGameWorld : ClientGameWorld
     {
@@ -89,6 +120,17 @@
         public const uint ProceduralWeaponAnimation = 0x198;
         public const uint IsLocalPlayer = 0x7FF; // bool
     }
+
+    public struct ProceduralWeaponAnimation
+    {
+        public const uint Breath = 0x28;
+        public const uint Shooting = 0x48;
+    }
+    public struct Breath
+    {
+        public const uint IsAiming = 0xA0;
+        public const uint Intensity = 0xA4  ;
+    }
     public struct Physical
     {
         public const uint MaxStamina = 0x38;
@@ -124,7 +166,30 @@
         public const uint MagDrillsUnLoadSpeed = 0x188; 
         public const uint MagDrillsLoadSpeed = 0x180;
         public const uint PerceptionLootDot = 0x120;
-        public const uint Value = 0x30; // float
+        public const uint StrengthBuffJumpHeightInc = 0x60;
+        public const uint PerceptionHearing = 0x118;
+        public const uint MagDrillsInventoryCheckSpeed = 0x190;
+        public const uint MagDrillsInventoryCheckAccuracy = 0x198;
+        public const uint AimMasterSpeed = 0x298;
+        public const uint AimMasterWiggle = 0x2A0;
+        public const uint RecoilControlImprove = 0x2B0;
+        public const uint TroubleFixing = 0x2C0;
+        public const uint ThrowingStrengthBuff = 0x2E8;
+        public const uint ThrowingEnergyExpenses = 0x2F0;
+        public const uint DrawSpeed = 0x300;
+        //public const uint ProneMovementSpeed = 0x468;
+        //public const uint SearchBuffSpeed = 0x480;
+        //public const uint SurgerySpeed = 0x498;
+
+        // bools
+        public const uint SearchDouble = 0x488;
+        public const uint AimMasterElite = 0x2A8;
+        public const uint MagDrillsInstantCheck = 0x1A0;
+        public const uint MagDrillsLoadProgression = 0x1A8;
+        public const uint StressBerserk = 0xF0;
+        public const uint IntellectEliteAmmoCounter = 0x148;
+
+        public const uint Value = 0x30; // float or boolean
     }
     public struct PlayerInfo // -.GClass1118
     {

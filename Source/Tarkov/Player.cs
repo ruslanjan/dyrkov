@@ -17,6 +17,27 @@ namespace eft_dma_radar
         private static Dictionary<string, int> _groups = new(StringComparer.OrdinalIgnoreCase);
         private static KDManager _kdManager;
 
+        public static readonly bones[] TargetBones = new bones[]
+        {
+            bones.HumanNeck,
+            bones.HumanLCollarbone,
+            bones.HumanRCollarbone,
+            bones.HumanLUpperarm,
+            bones.HumanRUpperarm,
+            bones.HumanLForearm1,
+            bones.HumanRForearm1,
+            bones.HumanLPalm,
+            bones.HumanRPalm,
+            bones.HumanLThigh1,
+            bones.HumanLThigh2,
+            bones.HumanRThigh1,
+            bones.HumanRThigh2,
+            bones.HumanLCalf,
+            bones.HumanRCalf,
+            bones.HumanLFoot,
+            bones.HumanRFoot
+        };
+
         private readonly Stopwatch _posRefreshSw = new();
         private readonly Stopwatch _kdRefreshSw = new();
         private readonly object _posLock = new(); // sync access to this.Position (non-atomic)
@@ -25,6 +46,7 @@ namespace eft_dma_radar
         private Transform _headTransform;
         private Transform _spineTransform;
         private Transform _pelvisTransform;
+        private Dictionary<bones, Transform> _bonesTransforms = new();
 
         #region PlayerProperties
         /// <summary>
@@ -78,6 +100,10 @@ namespace eft_dma_radar
         private Vector3 _spos = new(0, 0, 0); // backing field
         private readonly object _pposLock = new(); // sync access to this.Position (non-atomic)
         private Vector3 _ppos = new(0, 0, 0); // backing field
+
+        // Bones poses
+        private readonly object _bposLock = new(); // sync access to this.Position (non-atomic)
+        private Dictionary<bones, Vector3> _bpos = new(); // backing field
         /// <summary>
         /// Player's Unity Position in Local Game World.
         /// </summary>
@@ -117,6 +143,9 @@ namespace eft_dma_radar
             }
         }
 
+        public bool IsAiming = false;
+        public bool IsScope = false;
+
         public Vector3 SpinePos
         {
             get
@@ -153,6 +182,21 @@ namespace eft_dma_radar
             }
         }
 
+        public Vector3 getBonePose(bones b)
+        {
+            lock (_bposLock)
+            {
+                return _bpos[b];
+            }
+        }
+
+        public void setBonePose(bones b, Vector3 v)
+        {
+            lock (_bposLock)
+            {
+                _bpos[b] = v;
+            }
+        }
 
         /// <summary>
         /// Cached 'Zoomed Position' on the Radar GUI. Used for mouseover events.
@@ -273,6 +317,7 @@ namespace eft_dma_radar
         public ulong headTransform { get; }
         public ulong spineTransform { get; }
         public ulong pelvisTransform { get; }
+        public Dictionary<bones, ulong> bonesTransforms = new(); // backing field
 
         public ulong VerticesAddr
         {
@@ -310,6 +355,11 @@ namespace eft_dma_radar
         public Tuple<ulong, int, ulong, int> PelvisTransformScatterReadParameters
         {
             get => _pelvisTransform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
+        }
+
+        public Tuple<ulong, int, ulong, int> BonesTransformScatterReadParameters(bones b)
+        {
+            return _bonesTransforms[b].GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
         }
         #endregion
 
@@ -393,8 +443,15 @@ namespace eft_dma_radar
                 pelvisTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanPelvis) * 0x8)) + 0x10);
                 _pelvisTransform = new Transform(pelvisTransform);
                 
-                spineTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanSpine2) * 0x8)) + 0x10);
+                spineTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanSpine3) * 0x8)) + 0x10);
                 _spineTransform = new Transform(spineTransform);
+
+                foreach (var b in TargetBones)
+                {
+                    bonesTransforms[b] = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)b) * 0x8)) + 0x10);
+                    _bonesTransforms[b] = new Transform(bonesTransforms[b]);
+                }
+
 
                 TransformInternal = Memory.ReadPtrChain(playerBase, Offsets.Player.To_TransformInternal);
                 _transform = new Transform(TransformInternal, true);
@@ -534,17 +591,42 @@ namespace eft_dma_radar
             try
             {
                 if (obj is null) throw new NullReferenceException();
-                this.Position = _transform.GetPosition(new object[] { obj[0], obj[1] });
-                this.HeadPos = _headTransform.GetPosition();
-                this.SpinePos = _spineTransform.GetPosition(new object[] { obj[4], obj[5] });
-                this.PelvisPos = _pelvisTransform.GetPosition(new object[] { obj[6], obj[7] });
+                var input = new object[] { obj[0], obj[1] };
+                if (input[0] is null || input[1] is null)
+                    input = null;
+                this.Position = _transform.GetPosition(input);
+                input = new object[] { obj[2], obj[3] };
+                if (input[0] is null || input[1] is null)
+                    input = null;
+                this.HeadPos = _headTransform.GetPosition(input);
+                input = new object[] { obj[4], obj[5] };
+                if (input[0] is null || input[1] is null)
+                    input = null;
+                this.SpinePos = _spineTransform.GetPosition(input);
+                input = new object[] { obj[6], obj[7] };
+                if (input[0] is null || input[1] is null)
+                    input = null;
+                this.PelvisPos = _pelvisTransform.GetPosition(input);
+
+                var i = 8;
+                foreach (var b in TargetBones)
+                {
+                    try
+                    {
+                        if (obj[i] is not null && obj[i + 1] is not null)
+                            setBonePose(b, _bonesTransforms[b].GetPosition(new object[] { obj[i], obj[i + 1] }));
+                        else
+                            setBonePose(b, _bonesTransforms[b].GetPosition());
+                    } catch { }
+                    i += 2;
+                }
                 return true;
             }
             catch (Exception ex) // Attempt to re-allocate Transform on error
             {
                 Program.Log($"ERROR getting Player '{Name}' Position: {ex}");
                 if (!_posRefreshSw.IsRunning) _posRefreshSw.Start();
-                else if (_posRefreshSw.ElapsedMilliseconds < 15) // Rate limit attempts on getting pos to prevent stutters
+                else if (_posRefreshSw.ElapsedMilliseconds < 50) // Rate limit attempts on getting pos to prevent stutters
                 {
                     return false;
                 }
@@ -557,6 +639,10 @@ namespace eft_dma_radar
                     _headTransform = new Transform(headTransform);
                     _spineTransform = new Transform(spineTransform);
                     _pelvisTransform = new Transform(pelvisTransform);
+                    foreach (var b in TargetBones)
+                    {
+                        _bonesTransforms[b] = new Transform(bonesTransforms[b]);
+                    }
                 }
                 catch (Exception ex2)
                 {
@@ -722,6 +808,16 @@ namespace eft_dma_radar
             }
         }
 
+        public void UpdateIsAiming()
+        {
+            try
+            {
+                var proceduralWepAnim = Memory.ReadPtr(Base + Offsets.Player.ProceduralWeaponAnimation);
+                var breath = Memory.ReadPtr(proceduralWepAnim + Offsets.ProceduralWeaponAnimation.Breath);
+                IsAiming = Memory.ReadValue<bool>(breath + Offsets.Breath.IsAiming);
+            } catch { }
+        }
+
         
         public void ToggleMaxStamina()
         {
@@ -749,43 +845,133 @@ namespace eft_dma_radar
         /// or just null the mask `ProceduralWeaponAnimation ] + 0xF8 (?: int32_t)`, idk is nospread is server sided
         /// </summary>
         public bool noRecoil = false;
+        public bool noRecoilFirstOn = true;
         internal void ToggleNoRecoil()
         {
+            if (noRecoil == false)
+            {
+                noRecoilFirstOn = true;
+            }
             //Program.Log($"ToggleNoRecoil{noRecoil}");
             if (Type == PlayerType.LocalPlayer && noRecoil)
             {
                 try
                 {
                     var ProceduralWeaponAnimation = Memory.ReadPtr(Base + Offsets.Player.ProceduralWeaponAnimation);
-                    Memory.Write(ProceduralWeaponAnimation + 0x100, BitConverter.GetBytes(1)); // mask
+                    Memory.Write(ProceduralWeaponAnimation + 0x100, BitConverter.GetBytes(noRecoilFirstOn ? 1 : 0)); // mask
                     // breath
-                    var breath = Memory.ReadPtr(ProceduralWeaponAnimation + 0x28); // +0x28 (breath)
-                    Memory.Write(breath + 0x0A4, BitConverter.GetBytes(.0f)); // +0x0A4(intensity: float
+                    var breath = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Breath); // +0x28 (breath)
+                    Memory.Write(breath + Offsets.Breath.Intensity, BitConverter.GetBytes(.0f)); // +0x0A4(intensity: float
                     Memory.Write(breath + 0x0B8, new byte[] { 0x0, 0x0}); // +0x0B8(TremorOn: float + Fracture
 
                     // shooting
-                    var shotingg = Memory.ReadPtr(ProceduralWeaponAnimation + 0x48); // +0x48 (shotingg)
+                    var shotingg = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Shooting); // +0x48 (shotingg)
                     Memory.Write(shotingg + 0x40, new float[] { .0f, .0f, .0f }.SelectMany(f => BitConverter.GetBytes(f)).ToArray()); // +0x40 (RecoilStrengthXy:vector2<float>)` to { 0, 0 }  and `]+0x48 (RecoilStrengthZ:vector2<float>)` to { 0, ??? } (i just write vector3 { 0,0,0 } to RecoilStrengthXy) (norecoil)
-                    Memory.Write(shotingg + 0x6c, BitConverter.GetBytes(0L)); // +0x0A4(intensity: float
-                    Memory.Write(shotingg + 0x70, BitConverter.GetBytes(0L)); // +0x0A4(intensity: float
-                    //Memory.Write(shotingg + 0x74, BitConverter.GetBytes(0f)); // +0x0A4(intensity: float
+                    Memory.Write(shotingg + 0x6c, BitConverter.GetBytes(.0f));
+                    Memory.Write(shotingg + 0x70, BitConverter.GetBytes(.0f));
+                    Memory.Write(shotingg + 0x74, BitConverter.GetBytes(.0f));
+                    Memory.Write(shotingg + 0x78, BitConverter.GetBytes(.0f));
+                    Memory.Write(shotingg + 0x7c, BitConverter.GetBytes(.0f));
 
-                    var skills = Memory.ReadPtr(Memory.ReadPtr(Base + Offsets.Player.Profile) + Offsets.Profile.Skills);
-                    var skill = Memory.ReadPtr(skills + Offsets.Skills.AttentionExamine);
-                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
-                    skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsLoadSpeed);
-                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
-                      skill = Memory.ReadPtr(skills + Offsets.Skills.PerceptionLootDot);
-                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
-                    skill = Memory.ReadPtr(skills + Offsets.Skills.AttentionLootSpeed);
-                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
-                    skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsUnLoadSpeed);
-                    Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                    // Walk
+                    var walk = Memory.ReadPtr(ProceduralWeaponAnimation + 0x30);
+                    Memory.Write(walk + 0x44, BitConverter.GetBytes(.0f)); // intensity
+                    // motionReact
+                    var motionReact = Memory.ReadPtr(ProceduralWeaponAnimation + 0x38);
+                    Memory.Write(motionReact + 0xD0, BitConverter.GetBytes(.0f)); // intensity
+                    // forceReact
+                    var forceReact = Memory.ReadPtr(ProceduralWeaponAnimation + 0x40);
+                    Memory.Write(forceReact + 0x28, BitConverter.GetBytes(.0f)); // intensity
+
+                    if (noRecoilFirstOn)
+                    {
+                        noRecoilFirstOn = false;
+
+                        var skills = Memory.ReadPtr(Memory.ReadPtr(Base + Offsets.Player.Profile) + Offsets.Profile.Skills);
+                        var skill = Memory.ReadPtr(skills + Offsets.Skills.AttentionExamine);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsLoadSpeed);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.PerceptionLootDot);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.AttentionLootSpeed);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsUnLoadSpeed);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.StrengthBuffJumpHeightInc);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(0.3f));
+                        //skill = Memory.ReadPtr(skills + Offsets.Skills.PerceptionHearing);
+                        //Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsInventoryCheckSpeed);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsInventoryCheckAccuracy);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.AimMasterSpeed);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.AimMasterWiggle);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.RecoilControlImprove);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.TroubleFixing);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.ThrowingStrengthBuff);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.ThrowingEnergyExpenses);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.DrawSpeed);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+
+
+                        // booleans
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.SearchDouble);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.AimMasterElite);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsInstantCheck);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
+
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.MagDrillsLoadProgression);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.StressBerserk);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
+                        skill = Memory.ReadPtr(skills + Offsets.Skills.IntellectEliteAmmoCounter);
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
+
+
+                        this.disableInertia();
+                    }
 
                 } catch (Exception ex)
                 {
-                    Program.Log(ex.ToString());
+                    Program.Log($"NoRecoil {ex.ToString()}");
                 }
+            }
+        }
+
+        public void disableInertia()
+        {
+            var _config = Memory.ReadPtrChain(Memory.Game.MainApplication, Offsets.MainApp.ToConfig);
+            var inertia = Memory.ReadPtr(_config + Offsets.Config.Inertia);
+            if (inertia != 0)
+            {
+                Program.Log($"Inertia {inertia.ToString("X")}");
+                Program.Log($"Config {_config}");
+                Memory.Write(inertia + Offsets.Inertia.FallThreshold, BitConverter.GetBytes(99999.0f));
+                Memory.Write(inertia + Offsets.Inertia.BaseJumpPenaltyDuration, BitConverter.GetBytes(.0f));
+                Memory.Write(inertia + Offsets.Inertia.DurationPower, BitConverter.GetBytes(.0f));
+                Memory.Write(inertia + Offsets.Inertia.BaseJumpPenalty, BitConverter.GetBytes(.0f));
+                Memory.Write(inertia + Offsets.Inertia.PenaltyPower, BitConverter.GetBytes(.0f));
+                Memory.Write(inertia + Offsets.Inertia.MoveTimeRange, BitConverter.GetBytes(0L));
+                Memory.Write(inertia + Offsets.Inertia.MinDirectionBlendTime, BitConverter.GetBytes(.0f));
+
+                //Memory.Write(inertia + 0x10C, BitConverter.GetBytes(3.0f));
+                Memory.Write(inertia + 0xA8, BitConverter.GetBytes(9999.0f));
+                
             }
         }
         #endregion

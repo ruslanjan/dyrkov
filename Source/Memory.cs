@@ -15,7 +15,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Adjust this to achieve desired mem/sec performance. Higher = slower, Lower = faster.
         /// </summary>
-        private const int LOOP_DELAY = 100;
+        private const int LOOP_DELAY = 15;
 
         private static volatile char dk = (char)42;
         private static volatile bool _running = false;

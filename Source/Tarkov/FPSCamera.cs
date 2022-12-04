@@ -43,13 +43,13 @@ namespace eft_dma_radar.Source.Tarkov
         public Matrix4x4 GetViewMatrix()
         {
             var Matrix = Memory.ReadPtrChain(p, new uint[] { 0x30, 0x18});
-            ulong b = 0x2E4 ; // 0xDC 0x2E4 0x5b0
+            ulong b = 0x2E4; // 0xDC 0x2E4 0x5b0
             return Memory.ReadValue<Matrix4x4>(Matrix + b);
         }
 
         public ulong GetComponent(ulong obj, string s)
         {
-            ulong comps = Memory.ReadPtr(p + 0x30);
+            ulong comps = Memory.ReadPtr(obj + 0x30);
             for (ulong i = 0x8; i < 0x1000; i += 0x10)
             {
                 var fields = Memory.ReadPtr(Memory.ReadPtr(comps + i) + 0x28);

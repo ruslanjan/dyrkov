@@ -1,10 +1,14 @@
 ﻿using eft_dma_radar.Source;
 using eft_dma_radar.Source.Tarkov;
+using Offsets;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Numerics;
+using System.Security.AccessControl;
+using TarkovDev;
+using static vmmsharp.lc;
 
 namespace eft_dma_radar
 {
@@ -16,8 +20,11 @@ namespace eft_dma_radar
     {
         private readonly ulong _unityBase;
         private GameObjectManager _gom;
+        private ulong _app;
+        public ulong MainApplication;
         private ulong _localGameWorld;
         private FPSCamera _fpsCamera;
+        private OpticCamera _opticCamera;
         private LootManager _lootManager;
         private RegisteredPlayers _rgtPlayers;
         private GrenadeManager _grenadeManager;
@@ -62,6 +69,25 @@ namespace eft_dma_radar
                 }            
             }
         }
+        private object viewOpticMatrixLock = new object();
+        private Matrix4x4 _viewOpticMatrix;
+        public Matrix4x4 ViewOpticMatrix
+        {
+            get
+            {
+                lock (viewOpticMatrixLock)
+                {
+                    return _viewOpticMatrix;
+                }
+            }
+            set
+            {
+                lock (viewOpticMatrixLock)
+                {
+                    _viewOpticMatrix = value;
+                }
+            }
+        }
         public LootManager Loot
         {
             get => _lootManager;
@@ -99,6 +125,8 @@ namespace eft_dma_radar
                 _rgtPlayers.UpdateList(); // Check for new players, add to list
                 _rgtPlayers.UpdateAllPlayers(); // Update all player locations,etc.
                 ViewMatrix = FPSCamera.GetViewMatrix();
+                ViewOpticMatrix = _opticCamera.GetViewMatrix();
+
                 UpdateMisc(); // Loot, grenades, exfils,etc.
                 
             }
@@ -130,7 +158,7 @@ namespace eft_dma_radar
         {
             while (true)
             {
-                if (GetGOM() && GetLGW() && GetFPSCamera())
+                if (GetGOM() && GetApp() && GetLGW() && GetFPSCamera()  && GetOptic())
                 {
                     Thread.Sleep(1000);
                     break;
@@ -160,7 +188,7 @@ namespace eft_dma_radar
                     f = false;
                     var objectNamePtr = Memory.ReadPtr(activeObject.obj + Offsets.GameObject.ObjectName);
                     var objectNameStr = Memory.ReadString(objectNamePtr, 64);
-                    
+
                     if (objectNameStr.Contains(objectName, StringComparison.OrdinalIgnoreCase))
                     {
                         Program.Log($"Found object {objectNameStr} 0x{activeObject.obj.ToString("X")}");
@@ -204,7 +232,9 @@ namespace eft_dma_radar
                 ulong lastActiveNode = Memory.ReadPtr(_gom.LastActiveNode);
                 var gameWorld = GetObjectFromList(activeNodes, lastActiveNode, "GameWorld");
                 if (gameWorld == 0) throw new Exception("Unable to find GameWorld Object, likely not in raid.");
+                
                 _localGameWorld = Memory.ReadPtrChain(gameWorld, Offsets.GameWorld.To_LocalGameWorld); // Game world >> Local Game World
+                Program.Log($"Found Local GameWorld Object at 0x{_localGameWorld.ToString("X")}");
                 var rgtPlayers = new RegisteredPlayers(Memory.ReadPtr(_localGameWorld + Offsets.LocalGameWorld.RegisteredPlayers));
                 if (rgtPlayers.PlayerCount > 0) // Make sure not in hideout,etc.
                 {
@@ -224,6 +254,55 @@ namespace eft_dma_radar
                 return false;
             }
         }
+        
+        public ulong GetComponent(ulong obj, string s)
+        {
+            ulong comps = Memory.ReadPtr(obj + 0x30);
+            for (ulong i = 0x8; i < 0x400; i += 0x10)
+            {
+                try
+                {
+                    var fields = Memory.ReadPtr(Memory.ReadPtr(comps + i) + 0x28);
+
+                    var name = Memory.ReadPtrChain(fields, Offsets.Kernel.ClassName);
+                    var nameStr = Memory.ReadString(name, 64);
+                    Program.Log($"{nameStr} = {fields.ToString("X")}");
+                    if (nameStr.Contains(s, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return fields;
+                    }
+                }
+                catch { }
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Gets Application (Main Client).
+        /// </summary>
+        private bool GetApp()
+        {
+            try
+            {
+                ulong activeNodes = Memory.ReadPtr(_gom.ActiveNodes);
+                ulong lastActiveNode = Memory.ReadPtr(_gom.LastActiveNode);
+                var app = GetObjectFromList(activeNodes, lastActiveNode, "Application");
+                if (app == 0) throw new Exception("Unable to find Application (Main Client) Object, likely not in raid.");
+                Program.Log($"App {app.ToString("X")}");
+                MainApplication = GetComponent(app, "TarkovApplication");
+                Program.Log($"TarkovApplication {MainApplication.ToString("X")}");
+                if (MainApplication == 0) throw new Exception("Unable to find TarkovApplication Component, likely not in raid.");
+                _app = app;
+
+                return true;
+            }
+            catch (DMAShutdown) { throw; }
+            catch (Exception ex)
+            {
+                Program.Log($"ERROR getting Local Application (Main Client): {ex}");
+                return false;
+            }
+        }
 
         /// <summary>
         /// Gets FPS Camera.
@@ -236,6 +315,8 @@ namespace eft_dma_radar
                 ulong lastActiveNode = Memory.ReadPtr(_gom.LastMainCameraTaggedNode);
                 _fpsCamera = new FPSCamera(GetObjectFromList(activeNodes, lastActiveNode, "FPS Camera"));
                 if (_fpsCamera.p == 0) throw new Exception("Unable to find FPS Camera Object, likely not in raid.");
+                activeNodes = Memory.ReadPtr(_gom.ActiveNodes);
+                lastActiveNode = Memory.ReadPtr(_gom.LastActiveNode);
                 return true;
             }
             catch (DMAShutdown) { throw; }
@@ -244,6 +325,49 @@ namespace eft_dma_radar
                 Program.Log($"ERROR getting FPS Camera: {ex}");
                 return false;
             }
+        }
+
+        private bool GetOptic()
+        {
+
+            var temp = Memory.ReadPtr(this._unityBase + Offsets.ModuleBase.AllCameras + 0x0);
+            temp = Memory.ReadPtr(temp + 0x0);
+
+            var y = 0; 
+            var loop_count = 400;
+            do
+            {
+                ulong camera_object;
+                camera_object = Memory.ReadPtr(temp + 0x0);
+                if (camera_object != 0)
+                {
+                    try
+                    {
+                        var camera_name_ptr = Memory.ReadPtr(camera_object + 0x30);
+                        camera_name_ptr = Memory.ReadPtr(camera_name_ptr + 0x60);
+                        var camera_target_name = Memory.ReadString(camera_name_ptr, 64);
+                        //Program.Log($"FoundCamera {camera_target_name} 0x{camera_object.ToString("X")}");
+                        if (camera_target_name.Contains("BaseOpticCamera(Clone)", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Program.Log($"FoundCamera BaseOpticCamera(Clone) 0x{camera_object.ToString("X")}");
+                            _opticCamera = new OpticCamera(camera_object);
+                            if (_opticCamera.p == 0) ;
+                            return true;
+                        }
+                        /*if (camera_target_name.Contains("FPS Camera", StringComparison.OrdinalIgnoreCase))
+                        {
+                            Program.Log($"Found2 FPS Camera 0x{camera_object.ToString("X")}");
+                            return true;
+                        }*/
+                    }
+                    catch { }
+                    
+                }
+                temp = temp + 0x8; y++;
+            } while (y < loop_count) ;
+
+            throw new Exception("Unable to find BaseOpticCamera(Clone) Object, likely not in raid.");
+            return false;
         }
  
 
