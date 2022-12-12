@@ -48,6 +48,8 @@ namespace eft_dma_radar
         #endregion
 
         #region GUI Extensions
+        
+        
         /// <summary>
         /// Convert game position to 'Bitmap' Map Position coordinates.
         /// </summary>
@@ -391,6 +393,25 @@ namespace eft_dma_radar
                         Name = "SANTA",
                         Type = PlayerType.AIScav
                     };
+                case WildSpawnType.bossKnight:
+                    return new AIRole()
+                    {
+                        Name = "Knight",
+                        Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.followerBigPipe:
+                    return new AIRole()
+                    {
+                        Name = "BigPipe",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.followerBirdEye:
+                    return new AIRole()
+                    {
+                        Name = "BirdEye",
+                        Type = PlayerType.AIRaider
+                    };
+
                 default:
                     throw new ArgumentOutOfRangeException();
             }

@@ -252,12 +252,16 @@ namespace eft_dma_radar
                     var names = filter.Split(','); // Get multiple items searched
                     foreach (var name in names)
                     {
-                        var search = loot.Where(x => x.Item.name.Contains(name.Trim(), StringComparison.OrdinalIgnoreCase));
-                        foreach (var item in search)
+                        try
                         {
-                            if (!filteredLoot.Contains(item))
-                                filteredLoot.Add(item);
+                            var search = loot.Where(x => x.Item.name.Contains(name.Trim(), StringComparison.OrdinalIgnoreCase));
+                            foreach (var item in search)
+                            {
+                                if (!filteredLoot.Contains(item))
+                                    filteredLoot.Add(item);
+                            }
                         }
+                        catch { }
                     }
                 }
                 this.Filter = new(filteredLoot); // update ref

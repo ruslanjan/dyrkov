@@ -83,6 +83,17 @@ namespace Offsets
         public const uint IsPixelated = 0xe5;
         public const uint material = 0x90;
     }
+
+    public struct NightVision
+    {
+        public const uint On = 0xE4;
+        public const uint IsNoisy = 0xe1;
+        public const uint IsFpsStuck = 0xe2;
+        public const uint IsMotionBlurred = 0xe3;
+        public const uint IsGlitch = 0xe4;
+        public const uint IsPixelated = 0xe5;
+        public const uint material = 0x90;
+    }
     public struct ExfilController // -.GClass0B67
     {
         public const uint ExfilCount = 0x18; // int32

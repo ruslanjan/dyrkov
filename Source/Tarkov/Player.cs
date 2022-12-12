@@ -3,6 +3,9 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using static eft_dma_radar.Source.Kek;
+using System.Runtime.InteropServices;
+using System.Windows.Forms;
 
 namespace eft_dma_radar
 {
@@ -17,35 +20,30 @@ namespace eft_dma_radar
         private static Dictionary<string, int> _groups = new(StringComparer.OrdinalIgnoreCase);
         private static KDManager _kdManager;
 
-        public static readonly bones[] TargetBones = new bones[]
+        public static readonly bones[] TargetBones = new List<bones>
         {
-            bones.HumanNeck,
-            bones.HumanLCollarbone,
-            bones.HumanRCollarbone,
+            bones.HumanPelvis,
+            bones.HumanLCalf,
+            bones.HumanRCalf,
+            //bones.HumanLCollarbone,
+            //bones.HumanRCollarbone,
             bones.HumanLUpperarm,
             bones.HumanRUpperarm,
             bones.HumanLForearm1,
             bones.HumanRForearm1,
             bones.HumanLPalm,
             bones.HumanRPalm,
-            bones.HumanLThigh1,
-            bones.HumanLThigh2,
-            bones.HumanRThigh1,
-            bones.HumanRThigh2,
-            bones.HumanLCalf,
-            bones.HumanRCalf,
             bones.HumanLFoot,
-            bones.HumanRFoot
-        };
+            bones.HumanRFoot,
+            bones.HumanHead,
+            bones.HumanSpine3,
+        }.OrderBy(b => (long)b).ToArray();
 
         private readonly Stopwatch _posRefreshSw = new();
         private readonly Stopwatch _kdRefreshSw = new();
         private readonly object _posLock = new(); // sync access to this.Position (non-atomic)
         private readonly GearManager _gearManager;
         private Transform _transform;
-        private Transform _headTransform;
-        private Transform _spineTransform;
-        private Transform _pelvisTransform;
         private Dictionary<bones, Transform> _bonesTransforms = new();
 
         #region PlayerProperties
@@ -94,13 +92,6 @@ namespace eft_dma_radar
         /// </summary>
         public int Health { get; private set; } = -1;
         private Vector3 _pos = new(0, 0, 0); // backing field
-        private readonly object _hposLock = new(); // sync access to this.Position (non-atomic)
-        private Vector3 _hpos = new(0, 0, 0); // backing field
-        private readonly object _sposLock = new(); // sync access to this.Position (non-atomic)
-        private Vector3 _spos = new(0, 0, 0); // backing field
-        private readonly object _pposLock = new(); // sync access to this.Position (non-atomic)
-        private Vector3 _ppos = new(0, 0, 0); // backing field
-
         // Bones poses
         private readonly object _bposLock = new(); // sync access to this.Position (non-atomic)
         private Dictionary<bones, Vector3> _bpos = new(); // backing field
@@ -125,62 +116,9 @@ namespace eft_dma_radar
             }
         }
 
-        public Vector3 HeadPos
-        {
-            get
-            {
-                lock (_hposLock)
-                {
-                    return _hpos;
-                }
-            }
-            private set
-            {
-                lock (_hposLock)
-                {
-                    _hpos = value;
-                }
-            }
-        }
-
+        
         public bool IsAiming = false;
         public bool IsScope = false;
-
-        public Vector3 SpinePos
-        {
-            get
-            {
-                lock (_sposLock)
-                {
-                    return _spos;
-                }
-            }
-            private set
-            {
-                lock (_sposLock)
-                {
-                    _spos = value;
-                }
-            }
-        }
-
-        public Vector3 PelvisPos
-        {
-            get
-            {
-                lock (_pposLock)
-                {
-                    return _ppos;
-                }
-            }
-            private set
-            {
-                lock (_pposLock)
-                {
-                    _ppos = value;
-                }
-            }
-        }
 
         public Vector3 getBonePose(bones b)
         {
@@ -207,6 +145,7 @@ namespace eft_dma_radar
         /// 90 degree offset ~already~ applied to account for 2D-Map orientation.
         /// </summary>
         public Vector2 Rotation { get; private set; } = new Vector2(0, 0); // 64 bits will be atomic
+        public Vector2 RawRotation { get; private set; } = new Vector2(0, 0); // 64 bits will be atomic
         /// <summary>
         /// (PMC ONLY) Player's Gear Loadout.
         /// Key = Slot Name, Value = Item 'Long Name' in Slot
@@ -314,9 +253,6 @@ namespace eft_dma_radar
         /// </summary>
         public ulong Info { get; }
         public ulong TransformInternal { get; }
-        public ulong headTransform { get; }
-        public ulong spineTransform { get; }
-        public ulong pelvisTransform { get; }
         public Dictionary<bones, ulong> bonesTransforms = new(); // backing field
 
         public ulong VerticesAddr
@@ -342,19 +278,6 @@ namespace eft_dma_radar
         public Tuple<ulong, int, ulong, int> TransformScatterReadParameters
         {
             get => _transform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
-        }
-
-        public Tuple<ulong, int, ulong, int> HeadTransformScatterReadParameters
-        {
-            get => _headTransform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
-        }
-        public Tuple<ulong, int, ulong, int> SpineTransformScatterReadParameters
-        {
-            get => _spineTransform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
-        }
-        public Tuple<ulong, int, ulong, int> PelvisTransformScatterReadParameters
-        {
-            get => _pelvisTransform?.GetScatterReadParameters() ?? new Tuple<ulong, int, ulong, int>(0, 0, 0, 0);
         }
 
         public Tuple<ulong, int, ulong, int> BonesTransformScatterReadParameters(bones b)
@@ -437,15 +360,7 @@ namespace eft_dma_radar
                 
                 
                 var bone_matrix = Memory.ReadPtrChain(Base, Offsets.Player.bone_matrix);
-                headTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanHead) * 0x8)) + 0x10);
-                _headTransform = new Transform(headTransform);
                 
-                pelvisTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanPelvis) * 0x8)) + 0x10);
-                _pelvisTransform = new Transform(pelvisTransform);
-                
-                spineTransform = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)bones.HumanSpine3) * 0x8)) + 0x10);
-                _spineTransform = new Transform(spineTransform);
-
                 foreach (var b in TargetBones)
                 {
                     bonesTransforms[b] = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)b) * 0x8)) + 0x10);
@@ -565,6 +480,7 @@ namespace eft_dma_radar
             {
                 Vector2 rotation = (Vector2)obj; // unbox
                 Vector2 result;
+                this.RawRotation = rotation;
                 rotation.X -= 90; // degs offset
                 if (rotation.X < 0) rotation.X += 360f; // handle if neg
 
@@ -592,23 +508,9 @@ namespace eft_dma_radar
             {
                 if (obj is null) throw new NullReferenceException();
                 var input = new object[] { obj[0], obj[1] };
-                if (input[0] is null || input[1] is null)
-                    input = null;
                 this.Position = _transform.GetPosition(input);
-                input = new object[] { obj[2], obj[3] };
-                if (input[0] is null || input[1] is null)
-                    input = null;
-                this.HeadPos = _headTransform.GetPosition(input);
-                input = new object[] { obj[4], obj[5] };
-                if (input[0] is null || input[1] is null)
-                    input = null;
-                this.SpinePos = _spineTransform.GetPosition(input);
-                input = new object[] { obj[6], obj[7] };
-                if (input[0] is null || input[1] is null)
-                    input = null;
-                this.PelvisPos = _pelvisTransform.GetPosition(input);
 
-                var i = 8;
+                var i = 2;
                 foreach (var b in TargetBones)
                 {
                     try
@@ -636,11 +538,11 @@ namespace eft_dma_radar
                     var transform = new Transform(TransformInternal, true);
                     _transform = transform;
                     Program.Log($"Player '{Name}' obtained new Position Transform OK.");
-                    _headTransform = new Transform(headTransform);
-                    _spineTransform = new Transform(spineTransform);
-                    _pelvisTransform = new Transform(pelvisTransform);
+                    var bone_matrix = Memory.ReadPtrChain(Base, Offsets.Player.bone_matrix);
+                    
                     foreach (var b in TargetBones)
                     {
+                        bonesTransforms[b] = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)b) * 0x8)) + 0x10);
                         _bonesTransforms[b] = new Transform(bonesTransforms[b]);
                     }
                 }
@@ -846,8 +748,15 @@ namespace eft_dma_radar
         /// </summary>
         public bool noRecoil = false;
         public bool noRecoilFirstOn = true;
-        internal void ToggleNoRecoil()
+        private readonly Stopwatch _noRecoilRefreshSw = new();
+        internal void NoRecoil()
         {
+            if (!_noRecoilRefreshSw.IsRunning) _noRecoilRefreshSw.Start();
+            if (_noRecoilRefreshSw.ElapsedMilliseconds < 15)
+            {
+                return;
+            }
+            _noRecoilRefreshSw.Restart();
             if (noRecoil == false)
             {
                 noRecoilFirstOn = true;
@@ -858,7 +767,7 @@ namespace eft_dma_radar
                 try
                 {
                     var ProceduralWeaponAnimation = Memory.ReadPtr(Base + Offsets.Player.ProceduralWeaponAnimation);
-                    Memory.Write(ProceduralWeaponAnimation + 0x100, BitConverter.GetBytes(noRecoilFirstOn ? 1 : 0)); // mask
+                    Memory.Write(ProceduralWeaponAnimation + 0x100, BitConverter.GetBytes(1)); // mask
                     // breath
                     var breath = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Breath); // +0x28 (breath)
                     Memory.Write(breath + Offsets.Breath.Intensity, BitConverter.GetBytes(.0f)); // +0x0A4(intensity: float
@@ -912,19 +821,19 @@ namespace eft_dma_radar
                         skill = Memory.ReadPtr(skills + Offsets.Skills.AimMasterSpeed);
                         Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
                         skill = Memory.ReadPtr(skills + Offsets.Skills.AimMasterWiggle);
-                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(10.0f));
 
                         skill = Memory.ReadPtr(skills + Offsets.Skills.RecoilControlImprove);
-                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(10.0f));
                         skill = Memory.ReadPtr(skills + Offsets.Skills.TroubleFixing);
-                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(10.0f));
                         
                         skill = Memory.ReadPtr(skills + Offsets.Skills.ThrowingStrengthBuff);
-                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(10.0f));
                         skill = Memory.ReadPtr(skills + Offsets.Skills.ThrowingEnergyExpenses);
-                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
-                        skill = Memory.ReadPtr(skills + Offsets.Skills.DrawSpeed);
-                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(50.0f));
+                        Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(10.0f));
+                        //skill = Memory.ReadPtr(skills + Offsets.Skills.DrawSpeed);
+                        //Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(0.0f));
 
 
                         // booleans
@@ -948,7 +857,7 @@ namespace eft_dma_radar
 
                 } catch (Exception ex)
                 {
-                    Program.Log($"NoRecoil {ex.ToString()}");
+                    Program.Log($"NoRecoil {ex}");
                 }
             }
         }
@@ -971,6 +880,121 @@ namespace eft_dma_radar
 
                 //Memory.Write(inertia + 0x10C, BitConverter.GetBytes(3.0f));
                 Memory.Write(inertia + 0xA8, BitConverter.GetBytes(9999.0f));
+                
+            }
+        }
+
+        const float radiansToDegrees = 57.29578f;
+
+        Vector3 getAngle(Vector3 origin, Vector3 dest) {
+            Vector3 diff = origin - dest;
+            Vector3 ret = new();
+
+            float length = diff.Length();
+            ret.Y = (float)Math.Asin(diff.Y / length);
+            ret.X = -(float)Math.Atan2(diff.X, -diff.Z);
+ 
+            return Vector3.Multiply(ret, radiansToDegrees);
+        }
+
+        float calcFov(Vector3 viewAngle, Vector3 aimAngle)
+        {
+            Vector3 diff = viewAngle - aimAngle;
+            if (diff.X < -180f)
+                diff.X += 360f;
+            if (diff.X > 180f)
+                diff.X -= 360f;
+            return Math.Abs(diff.Length());
+        }
+        public bool kekBotOn = false;
+        public int kekBotBoneIdx = 0;
+        public readonly List<bones> kekBotBones = new()
+        {
+            bones.HumanHead,
+            bones.HumanSpine3,
+        };
+
+        public bones kekBotBone
+        {
+            get => kekBotBones[kekBotBoneIdx % kekBotBones.Count];
+        }
+        private readonly Stopwatch _kekRefreshSw = new();
+        public void Kekbot()
+        {
+            if (!_kekRefreshSw.IsRunning) _kekRefreshSw.Start();
+            if (_kekRefreshSw.ElapsedMilliseconds < 15)
+            {
+                return;
+            }
+            _kekRefreshSw.Restart();
+            if (Type == PlayerType.LocalPlayer && kekBotOn)
+            {
+                
+                try
+                {
+                    var myPos = _transform.GetPosition();
+                    //(myPos.Y, myPos.Z) = (myPos.Z, myPos.Y);
+                    var localView = new Vector3(RawRotation.X, RawRotation.Y, 0);
+
+                    var _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x538), new uint[]
+                    {
+                    0xC8,
+                    0x10,
+                    0x10,
+                    0x28,
+                    0x10
+                    });
+                    /*var _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x538), new uint[]
+                    {
+                        0x20,
+                        0x10,
+                    });*/
+                    var fireportTransForm = new Transform(_fireportTransform);
+                    var fPos = fireportTransForm.GetPosition();
+                    (fPos.Y, fPos.Z) = (fPos.Z, fPos.Y);
+
+                    float fov;
+                    float bestFov = 500.0f;
+                    Vector3 chosenAngle = new();
+                    foreach (var p in Memory.Game.Players.Select(p => p.Value))
+                    {
+                        try
+                        {
+                            if (p.Type == PlayerType.LocalPlayer)
+                                continue;
+                            var pPos = p._transform.GetPosition();
+                            //(pPos.Y, pPos.Z) = (pPos.Z, pPos.Y);
+                            var distance = Vector3.Distance(myPos, pPos);
+                            //if (Vector3.Distance(myPos, pPos) > 1000) // MAX_RENDER_DISTANCE
+                            var headPos = p._bonesTransforms[kekBotBone].GetPosition();
+                            (headPos.Y, headPos.Z) = (headPos.Z, headPos.Y);
+                            if (distance < 150f)
+                            {
+                                Vector3 rotationAngle = getAngle(fPos, headPos);
+                                fov = calcFov(new Vector3(localView.X, localView.Y, 0),
+                                    new Vector3(rotationAngle.X, rotationAngle.Y, 0));
+                                if (fov < bestFov && fov < 20.0f)
+                                {
+                                    bestFov = fov;
+                                    chosenAngle = rotationAngle;
+                                }
+                            }
+                        } catch { }
+                        
+                    }
+
+
+                    if (bestFov > 10.0f)
+                    {
+                        return;
+                    }
+                    Program.Log($"Aimbot {bestFov}");
+                    var angle = new Vector2(chosenAngle.X, chosenAngle.Y);
+                    Memory.Write(MovementContext + Offsets.MovementContext.Rotation,
+                                          BitConverter.GetBytes(angle.X));
+                    Memory.Write(MovementContext + Offsets.MovementContext.Rotation + 4,
+                                          BitConverter.GetBytes(angle.Y));
+                } catch { }
                 
             }
         }

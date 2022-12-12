@@ -933,7 +933,20 @@ namespace eft_dma_radar
         /// <summary>
         /// Santa
         /// </summary>
-        gifter = 33554432
+        gifter = 33554432,
+
+        /// <summary>
+        /// Santa
+        /// </summary>
+        bossKnight = 67108864,
+        /// <summary>
+        /// Santa
+        /// </summary>
+        followerBigPipe = 134217728,
+        /// <summary>
+        /// Santa
+        /// </summary>
+        followerBirdEye = 268435456
     };
 
     [Flags]

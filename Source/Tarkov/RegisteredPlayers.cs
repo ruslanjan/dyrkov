@@ -62,7 +62,7 @@ namespace eft_dma_radar
             try
             {
                 var count = this.PlayerCount; // cache count
-                if (count < 1 || count > 1024)
+                if (count < 2 || count > 1024)
                     throw new RaidEnded();
                 var registered = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                 var scatterMap = new ScatterReadMap();
@@ -104,7 +104,6 @@ namespace eft_dma_radar
                         registered.Add(id); // ID is registered, cache it
                         if (_players.TryGetValue(id, out var existingPlayer)) // Player already exists, check for problems
                         {
-                            existingPlayer.ToggleNoRecoil();
                             if (existingPlayer.ErrorCount > 100) // Erroring out a lot? Re-Alloc
                             {
                                 Program.Log($"WARNING - Existing player '{existingPlayer.Name}' being re-allocated due to excessive errors...");
@@ -240,42 +239,9 @@ namespace eft_dma_radar
                         }
 
 
-                        // head
-                        {
-                            var hposAddr = player.HeadTransformScatterReadParameters;
-                            var hindices = round1.AddEntry(i, 14, hposAddr.Item1,
-                                typeof(List<int>), hposAddr.Item2);
-                            hindices.SizeMult = 4;
-                            var hvertices = round1.AddEntry(i, 15, hposAddr.Item3,
-                                typeof(List<Vector128<float>>), hposAddr.Item4);
-                            hvertices.SizeMult = 16;
-                        }
-
-                        // spine
-                        {
-                            var sposAddr = player.SpineTransformScatterReadParameters;
-                            var sindices = round1.AddEntry(i, 16, sposAddr.Item1,
-                                typeof(List<int>), sposAddr.Item2);
-                            sindices.SizeMult = 4;
-                            var svertices = round1.AddEntry(i, 17, sposAddr.Item3,
-                                typeof(List<Vector128<float>>), sposAddr.Item4);
-                            svertices.SizeMult = 16;
-                        }
-
-                        // pelvis
-                        {
-                            var pposAddr = player.PelvisTransformScatterReadParameters;
-                            var pindices = round1.AddEntry(i, 18, pposAddr.Item1,
-                                typeof(List<int>), pposAddr.Item2);
-                            pindices.SizeMult = 4;
-                            var pvertices = round1.AddEntry(i, 19, pposAddr.Item3,
-                                typeof(List<Vector128<float>>), pposAddr.Item4);
-                            pvertices.SizeMult = 16;
-                        }
-
                         // bones
                         {
-                            var id = 20; // next id
+                            var id = 14; // next id
                             foreach (var b in Player.TargetBones)
                             {
                                 var posAddr = player.BonesTransformScatterReadParameters(b);
@@ -349,17 +315,8 @@ namespace eft_dma_radar
                         {
                             scatterMap.Results[i][8].Result,
                             scatterMap.Results[i][9].Result,
-                            // head
-                            scatterMap.Results[i][14].Result,
-                            scatterMap.Results[i][15].Result,
-                            // Spine
-                            scatterMap.Results[i][16].Result,
-                            scatterMap.Results[i][17].Result,
-                            // pelvis
-                            scatterMap.Results[i][18].Result,
-                            scatterMap.Results[i][19].Result,
                         };
-                        var id = 20;
+                        var id = 14;
                         foreach (var b in Player.TargetBones)
                         {
                             posBufs.Add(scatterMap.Results[i][id].Result);
@@ -373,7 +330,7 @@ namespace eft_dma_radar
                         else player.ErrorCount++;
                     }
                 }
-                if (_players.FirstOrDefault(x => x.Value.Type is PlayerType.LocalPlayer).Value.Base != 0)
+                if (_players.Where(x => x.Value.Type is PlayerType.LocalPlayer).Count() > 0)
                     _players.FirstOrDefault(x => x.Value.Type is PlayerType.LocalPlayer).Value.UpdateIsAiming();
                 if (checkHealth) _healthSw.Restart();
                 if (checkPos) _posSw.Restart();

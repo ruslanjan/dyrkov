@@ -1,14 +1,10 @@
-﻿using Gma.System.MouseKeyHook;
-using SkiaSharp;
+﻿using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
-using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Windows.Forms;
-using static System.Net.Mime.MediaTypeNames;
 using Timer = System.Windows.Forms.Timer;
 
 namespace eft_dma_radar.Source
@@ -70,7 +66,11 @@ namespace eft_dma_radar.Source
         /// </summary>
         private Player LocalPlayer
         {
-            get => Memory.Players?.FirstOrDefault(x => x.Value.Type is PlayerType.LocalPlayer).Value;
+            get
+            {
+                var p = Memory.Players?.FirstOrDefault(x => x.Value.Type is PlayerType.LocalPlayer);
+                return p?.Value;
+            }
         }
         /// <summary>
         /// All Players in Local Game World (including dead/exfil'd) 'Player' collection.
@@ -99,7 +99,7 @@ namespace eft_dma_radar.Source
         public const string WINDOW_NAME = "EscapeFromTarkov";
         IntPtr handle = FindWindow(null, WINDOW_NAME);
         RECT rect = new RECT();
-        
+
         Graphics g;
         Pen pen = new Pen(Color.Red);
         Pen gpen = new Pen(Color.Green);
@@ -166,9 +166,27 @@ namespace eft_dma_radar.Source
 
 
             Timer tmr = new Timer();
-            tmr.Interval = 2000;   // milliseconds
+            tmr.Interval = 15;   // milliseconds
             tmr.Tick += TmrTick;  // set handler
-            //tmr.Start();
+                                  //tmr.Start();
+
+            new Thread(() =>
+            {
+                while (true)
+                {
+                    if (InGame && LocalPlayer is not null)
+                    {
+
+                        LocalPlayer.NoRecoil();
+                        LocalPlayer.Kekbot();
+                    }
+                    Thread.Sleep(15);
+                }
+            })
+            {
+                IsBackground = true,
+                Priority = ThreadPriority.AboveNormal
+            }.Start();
 
 
 
@@ -212,7 +230,7 @@ namespace eft_dma_radar.Source
             {
                 //await Task.Run(() => Thread.SpinWait(8*50000)); // High performance async delay
                 await Task.Run(() => Thread.Sleep(10));
-                
+
                 _canvas.Refresh(); // draw next frame
             }
         }
@@ -225,7 +243,7 @@ namespace eft_dma_radar.Source
             return 0 != (GetAsyncKeyState((int)vKey) & 0x8000);
         }
 
-        private bool[] inputMask = new bool[5];
+        private bool[] inputMask = new bool[7];
         private void ProcessInput()
         {
             var i = 0;
@@ -278,6 +296,27 @@ namespace eft_dma_radar.Source
             }
             else if (!IsKeyPushedDown(Keys.F5) && !inputMask[i]) inputMask[i] = true;
 
+            i = 5;
+            if (IsKeyPushedDown(Keys.Z))
+            {
+                if (LocalPlayer is not null)
+                    LocalPlayer.kekBotOn = true;
+            }
+            else if (!IsKeyPushedDown(Keys.Z))
+            {
+                if (LocalPlayer is not null)
+                    LocalPlayer.kekBotOn = false;
+            }
+
+            i = 6;
+            if (IsKeyPushedDown(Keys.H) && inputMask[i])
+            {
+
+                inputMask[i] = false;
+                if (LocalPlayer is not null)
+                    LocalPlayer.kekBotBoneIdx++;
+            }
+            else if (!IsKeyPushedDown(Keys.H) && !inputMask[i]) inputMask[i] = true;
         }
 
 
@@ -285,7 +324,7 @@ namespace eft_dma_radar.Source
         {
             //this.Invalidate();  // move image across screen, picture box is control so no repaint needed
             // set window over target
-            this.BringToFront();
+            //this.BringToFront();
 
         }
 
@@ -316,7 +355,7 @@ namespace eft_dma_radar.Source
                 _fpsWatch.Restart();
                 fps = _fps;
                 _fps = 0;
-                
+
             }
             else _fps++;
             this.DrawHud(canvas);
@@ -359,13 +398,18 @@ namespace eft_dma_radar.Source
                         {
                             this.DrawLoot(canvas, Memory.Loot.Filter, view_matrix, sourcePlayer);
                         }
+
+                        if (Memory.Grenades != null)
+                        {
+                            this.DrawGrenades(canvas, Memory.Grenades, view_matrix, sourcePlayer);
+                        }
                     }
                     catch { }
                 }
             }
             catch { }
-             if (Memory.InGame && Memory.Players != null)
-            this.drawCrosshair(canvas);
+            if (Memory.InGame && Memory.Players != null)
+                this.drawCrosshair(canvas);
         }
 
         private void DrawHud(SKCanvas canvas)
@@ -374,10 +418,15 @@ namespace eft_dma_radar.Source
             if (LocalPlayer is not null)
             {
                 var i = 1;
-                var LineHeight = 16;
+                var LineHeight = 20;
                 canvas.DrawText($"IsScope?: {LocalPlayer.IsScope}", 10, 20 + i * LineHeight + 5, SKPaints.TextImportantLoot);
                 i++;
                 canvas.DrawText($"IsNoRecoil?: {LocalPlayer.noRecoil}", 10, 20 + i * LineHeight + 5, SKPaints.TextImportantLoot);
+                i++;
+                canvas.DrawText($"kekBotOn?: {LocalPlayer.kekBotOn}", 10, 20 + i * LineHeight + 5, SKPaints.TextImportantLoot);
+                i++;
+                canvas.DrawText($"kekBotBone?: {LocalPlayer.kekBotBone.ToString()}", 10, 20 + i * LineHeight + 5, SKPaints.TextImportantLoot);
+
             }
         }
 
@@ -386,6 +435,26 @@ namespace eft_dma_radar.Source
             var m = new Vector2(this.Width / 2, this.Height / 2);
             canvas.DrawLine(m.X - 5, m.Y, m.X + 5, m.Y, SKPaints.Crosshair);
             canvas.DrawLine(m.X, m.Y - 5, m.X, m.Y + 5, SKPaints.Crosshair);
+        }
+        public void DrawGrenades(SKCanvas canvas, ReadOnlyCollection<Grenade> items, Matrix4x4 view_matrix, Player sourcePlayer)
+        {
+            foreach (var item in items)
+            {
+                SKPaint paint = SKPaints.PaintGrenades;
+                SKPaint text = SKPaints.TextLoot;
+
+                var itemPos = item.Position;
+                float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
+                if (dist > 100f)
+                    continue;
+                Vector2 pos;
+                if (!w2s(view_matrix, new Vector3(itemPos.X, itemPos.Z, itemPos.Y), out pos))
+                {
+                    continue;
+                }
+                canvas.DrawText($"{(int)dist}", pos.X, pos.Y + 17, text);
+                canvas.DrawCircle(pos.X, pos.Y, 3, paint);
+            }
         }
 
         public void DrawLoot(SKCanvas canvas, ReadOnlyCollection<LootItem> items, Matrix4x4 view_matrix, Player sourcePlayer)
@@ -408,10 +477,11 @@ namespace eft_dma_radar.Source
                 {
                     continue;
                 }
-                if (Vector2.Distance(new Vector2(this.Width / 2, this.Height/2), pos) < 50)
+                if (Vector2.Distance(new Vector2(this.Width / 2, this.Height / 2), pos) < 50)
                 {
                     points.Add(new Tuple<LootItem, Vector2>(item, pos));
-                } else
+                }
+                else
                 {
                     canvas.DrawText($"{item.Label} : {(int)dist}", pos.X, pos.Y, text);
                 }
@@ -425,7 +495,8 @@ namespace eft_dma_radar.Source
                 if (a.Item2.Y < b.Item2.Y)
                 {
                     return -1;
-                } if (a.Item2.Y > b.Item2.Y)
+                }
+                if (a.Item2.Y > b.Item2.Y)
                 {
                     return 1;
                 }
@@ -437,7 +508,7 @@ namespace eft_dma_radar.Source
                 // loot in the center
                 Vector2 pos = points[0].Item2;
                 var LineHeight = 16;
-                canvas.DrawRect(pos.X, pos.Y - 10, LineHeight * (points.Select(p => p.Item1.Label.Length).Max() + 6), 16 * points.Count, SKPaints.DarkTextbg);
+                canvas.DrawRect(pos.X, pos.Y - 10, LineHeight * (points.Select(p => p.Item1.Label.Length).Max() + 6), 18 * points.Count, SKPaints.DarkTextbg);
                 foreach (var i in points)
                 {
                     var item = i.Item1;
@@ -448,7 +519,7 @@ namespace eft_dma_radar.Source
                     var itemPos = item.Position;
                     float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
                     canvas.DrawText($"{item.Label} | {(int)dist}", pos.X, pos.Y, text);
-                    pos.Y += 15;
+                    pos.Y += 18;
                 }
 
             }
@@ -461,9 +532,9 @@ namespace eft_dma_radar.Source
 
             if (player.Type == PlayerType.LocalPlayer) return; // don't draw self
             var playerPos = player.Position;
-            var headPos = player.HeadPos;
-            var spinePos = player.SpinePos;
-            var pelvisPos = player.PelvisPos;
+            var headPos = player.getBonePose(Player.bones.HumanHead);
+            var spinePos = player.getBonePose(Player.bones.HumanSpine3);
+            var pelvisPos = player.getBonePose(Player.bones.HumanPelvis);
 
             float dist = Vector3.Distance(sourcePlayer.Position, playerPos);
 
@@ -554,31 +625,22 @@ namespace eft_dma_radar.Source
             SKPath path = new SKPath();
 
             path.MoveTo(headScreen.X, headScreen.Y);
-            path.LineTo(bonesScreen[Player.bones.HumanNeck].X, bonesScreen[Player.bones.HumanNeck].Y);
             path.LineTo(spineScreen.X, spineScreen.Y);
             path.LineTo(pelvisScreen.X, pelvisScreen.Y);
-            
-            path.MoveTo(bonesScreen[Player.bones.HumanNeck].X, bonesScreen[Player.bones.HumanNeck].Y);
-            path.LineTo(bonesScreen[Player.bones.HumanLCollarbone].X, bonesScreen[Player.bones.HumanLCollarbone].Y);
-            path.LineTo(bonesScreen[Player.bones.HumanLUpperarm].X, bonesScreen[Player.bones.HumanLUpperarm].Y);
+
+            path.MoveTo(bonesScreen[Player.bones.HumanLUpperarm].X, bonesScreen[Player.bones.HumanLUpperarm].Y);
             path.LineTo(bonesScreen[Player.bones.HumanLForearm1].X, bonesScreen[Player.bones.HumanLForearm1].Y);
             path.LineTo(bonesScreen[Player.bones.HumanLPalm].X, bonesScreen[Player.bones.HumanLPalm].Y);
-            
-            path.MoveTo(bonesScreen[Player.bones.HumanNeck].X, bonesScreen[Player.bones.HumanNeck].Y);
-            path.LineTo(bonesScreen[Player.bones.HumanRCollarbone].X, bonesScreen[Player.bones.HumanRCollarbone].Y);
-            path.LineTo(bonesScreen[Player.bones.HumanRUpperarm].X, bonesScreen[Player.bones.HumanRUpperarm].Y);
+
+            path.MoveTo(bonesScreen[Player.bones.HumanRUpperarm].X, bonesScreen[Player.bones.HumanRUpperarm].Y);
             path.LineTo(bonesScreen[Player.bones.HumanRForearm1].X, bonesScreen[Player.bones.HumanRForearm1].Y);
             path.LineTo(bonesScreen[Player.bones.HumanRPalm].X, bonesScreen[Player.bones.HumanRPalm].Y);
 
             path.MoveTo(pelvisScreen.X, pelvisScreen.Y);
-            path.LineTo(bonesScreen[Player.bones.HumanLThigh1].X, bonesScreen[Player.bones.HumanLThigh1].Y);
-            path.LineTo(bonesScreen[Player.bones.HumanLThigh2].X, bonesScreen[Player.bones.HumanLThigh2].Y);
             path.LineTo(bonesScreen[Player.bones.HumanLCalf].X, bonesScreen[Player.bones.HumanLCalf].Y);
             path.LineTo(bonesScreen[Player.bones.HumanLFoot].X, bonesScreen[Player.bones.HumanLFoot].Y);
 
             path.MoveTo(pelvisScreen.X, pelvisScreen.Y);
-            path.LineTo(bonesScreen[Player.bones.HumanRThigh1].X, bonesScreen[Player.bones.HumanRThigh1].Y);
-            path.LineTo(bonesScreen[Player.bones.HumanRThigh2].X, bonesScreen[Player.bones.HumanRThigh2].Y);
             path.LineTo(bonesScreen[Player.bones.HumanRCalf].X, bonesScreen[Player.bones.HumanRCalf].Y);
             path.LineTo(bonesScreen[Player.bones.HumanRFoot].X, bonesScreen[Player.bones.HumanRFoot].Y);
 
@@ -610,12 +672,12 @@ namespace eft_dma_radar.Source
                 float angle_rad_half = ((float)Math.PI / 180f) * 35f * 0.5f;
                 float angle_ctg = (float)(Math.Cos(angle_rad_half) / Math.Sin(angle_rad_half));
 
-                var aspect_ratio = 16f/9f;
+                var aspect_ratio = 16f / 9f;
                 x /= angle_ctg * aspect_ratio * 0.5f;
                 y /= angle_ctg * 0.5f;
             }
 
-            
+
 
             screen = new Vector2((this.Width / 2) * (1.0f + x / w), ((this.Height / 2) * (1.0f - y / w)));
 

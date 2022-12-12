@@ -15,7 +15,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Adjust this to achieve desired mem/sec performance. Higher = slower, Lower = faster.
         /// </summary>
-        private const int LOOP_DELAY = 15;
+        private const int LOOP_DELAY = 10;
 
         private static volatile char dk = (char)42;
         private static volatile bool _running = false;
@@ -661,6 +661,11 @@ namespace eft_dma_radar
         private static uint BYTE_OFFSET(ulong va)
         {
             return (uint)(va & (PAGE_SIZE - 1));
+        }
+
+        internal static void Write(ulong v, object value)
+        {
+            throw new NotImplementedException();
         }
         #endregion
     }

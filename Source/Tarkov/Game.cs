@@ -47,7 +47,7 @@ namespace eft_dma_radar
         }
         public Player LocalPlayer
         {
-            get => LocalPlayer;
+            get => _rgtPlayers?.Players.Where(p => p.Value.Type == PlayerType.LocalPlayer).First().Value;
         }
 
         private object viewMatrixLock = new object();
@@ -284,6 +284,10 @@ namespace eft_dma_radar
         {
             try
             {
+                if (_app != 0)
+                {
+                    return true;
+                }
                 ulong activeNodes = Memory.ReadPtr(_gom.ActiveNodes);
                 ulong lastActiveNode = Memory.ReadPtr(_gom.LastActiveNode);
                 var app = GetObjectFromList(activeNodes, lastActiveNode, "Application");
