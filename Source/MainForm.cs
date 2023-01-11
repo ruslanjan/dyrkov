@@ -678,7 +678,7 @@ namespace eft_dma_radar
             if (_filterEntry is null ||
                 _filterEntry.Trim() == string.Empty)
             {
-                var value = Math.Max(item.Item.avg24hPrice, item.Item.traderPrice);
+                var value = DyrkovMarketManager.GetItemValuePerSlot(item.Item);
                 if (item.Important || value >= _config.MinImportantLootValue) return true;
                 else return false;
             }
@@ -1221,7 +1221,7 @@ namespace eft_dma_radar
                 })
                 {
                     IsBackground = true,
-                    Priority = ThreadPriority.AboveNormal
+                    //Priority = ThreadPriority.AboveNormal
                 };
                 kekWorker.Start();
             }
@@ -1229,11 +1229,12 @@ namespace eft_dma_radar
             {
                 if (kek.Checked)
                 {
-                    Kek.kek.Invoke(new MethodInvoker(Kek.kek.Show));
+                    //Kek.kek.Invoke(new MethodInvoker(Kek.kek.Show));
                 }
                 else
                 {
-                    Kek.kek.Invoke(new MethodInvoker(Kek.kek.Hide));
+                    Kek.kek.Invoke(new MethodInvoker(Kek.kek.Close));
+                    Kek.kek = null; 
                 }
             }
         }
@@ -1251,6 +1252,11 @@ namespace eft_dma_radar
         private void MaxStamina_CheckedChanged_1(object sender, EventArgs e)
         {
             MaxStamina_CheckedChanged(sender, e);
+        }
+
+        private void groupBox_Loot_Enter_2(object sender, EventArgs e)
+        {
+
         }
     }
     #endregion

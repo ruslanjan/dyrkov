@@ -3,6 +3,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Xml.Linq;
 
 namespace eft_dma_radar
 {
@@ -67,30 +68,48 @@ namespace eft_dma_radar
                 var unknownPtr = round2.AddEntry(i, 1, lootObjectsEntity, typeof(ulong), null, Offsets.LootListItem.LootUnknownPtr);
                 var interactiveClass = round3.AddEntry(i, 2, unknownPtr, typeof(ulong), null, Offsets.LootUnknownPtr.LootInteractiveClass);
                 var baseObject = round4.AddEntry(i, 3, interactiveClass, typeof(ulong), null, Offsets.LootInteractiveClass.LootBaseObject);
+                var className0 = round4.AddEntry(i, 7, interactiveClass, typeof(ulong), null, Offsets.Kernel.ClassName[0]);
+                var className1 = round5.AddEntry(i, 8, className0, typeof(ulong), null, Offsets.Kernel.ClassName[1]);
                 var gameObject = round5.AddEntry(i, 4, baseObject, typeof(ulong), null, Offsets.LootBaseObject.GameObject);
+                var className = round6.AddEntry(i, 9, className1, typeof(ulong), null, Offsets.Kernel.ClassName[2]);
                 var pGameObjectName = round6.AddEntry(i, 5, gameObject, typeof(ulong), null, Offsets.GameObject.ObjectName);
                 var name = round7.AddEntry(i, 6, pGameObjectName, typeof(string), 64);
             }
             map.Execute(countLootListObjects); // execute scatter read
             var lootNames = new List<string>();
+            var lootClassNames = new List<string>();
             var possibleContainer = new List<string>();
             for (int i = 0; i < countLootListObjects; i++)
             {
+                String name = "", classNameStr = "";
+                ulong interactiveClass = 0;
+                var added = false;
                 try
                 {
                     if (map.Results[i][2].Result is null ||
                         map.Results[i][4].Result is null ||
                         map.Results[i][6].Result is null) continue;
                     var lootObjectsEntity = (ulong)map.Results[i][0].Result;
-                    var interactiveClass = (ulong)map.Results[i][2].Result;
+                    interactiveClass = (ulong)map.Results[i][2].Result;
                     var gameObject = (ulong)map.Results[i][4].Result;
-                    var name = (string)map.Results[i][6].Result;
+                    name = (string)map.Results[i][6].Result;
+                    classNameStr = Memory.ReadString((ulong)map.Results[i][9].Result, 64);
+                    if (classNameStr.Contains("", StringComparison.OrdinalIgnoreCase))
+                    {
+                        //return fields;
+                    }
+                    
+                    // skip usless stuff
+                    if (name.Contains("POS_Money", StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
                     //Program.Log($"Loot:{name}");
                     if (name.Contains("script", StringComparison.OrdinalIgnoreCase))
                     {
                         //skip these. These are scripts which I think are things like landmines but not sure
                     }
-                    else if (name.Contains("lootcorpse_playersuperior", StringComparison.OrdinalIgnoreCase))
+                    else if (name.Contains("lootcorpse_playersuperior", StringComparison.OrdinalIgnoreCase) || classNameStr.Contains("Corpse"))
                     {
                         var objectClass = Memory.ReadPtr(gameObject + Offsets.GameObject.ObjectClass);
                         var transformInternal = Memory.ReadPtrChain(objectClass, Offsets.LootGameObjectClass.To_TransformInternal);
@@ -101,6 +120,7 @@ namespace eft_dma_radar
                             AlwaysShow = true,
                             Label = "Corpse"
                         });
+                        added = true;
                     }
                     else
                     {
@@ -110,15 +130,18 @@ namespace eft_dma_radar
                         var pos = new Transform(transformInternal).GetPosition();
 
                         //the WORST method to figure out if an item is a container...but no better solution now
-                        bool container = _containers.Any(x => name.Contains(x, StringComparison.OrdinalIgnoreCase));
-
+                        bool container = classNameStr.Contains("LootableContainer");
+                        if (classNameStr.Contains("ObservedLootItem"))
+                        {
+                            container = false;
+                        }
                         try
                         {
-                            var _itemOwner = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.ContainerItemOwner);
+                            /*var _itemOwner = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.ContainerItemOwner);
                             if (_itemOwner != 0)
                             {
                                 container = true;
-                            }
+                            }*/
                         }
                         catch { }
 
@@ -138,20 +161,29 @@ namespace eft_dma_radar
                                         Important = true,
                                         AlwaysShow = true
                                     });
+
+                                    added = true;
                                     continue;
                                 }
                                 // EFT.Interactive.LootableContainer 
                                 var itemOwner = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.ContainerItemOwner);
+                                //var itemOwnerClassName = Memory.ReadString(Memory.ReadPtrChain(itemOwner, Offsets.Kernel.ClassName), 64);
                                 var itemBase = Memory.ReadPtr(itemOwner + Offsets.ContainerItemOwner.LootItemBase);
+                                //var itemClassName = Memory.ReadString(Memory.ReadPtrChain(itemBase, Offsets.Kernel.ClassName), 64);
                                 var grids = Memory.ReadPtr(itemBase + Offsets.LootItemBase.Grids);
+                                if (grids == 0)
+                                    grids = Memory.ReadPtr(itemBase + 0x110);
+                                //Program.Log($"loading container {name}:{classNameStr}:{itemClassName}:{itemOwnerClassName}");
                                 GetItemsInGrid(grids, "ignore", pos, loot);
+                                added = true;
                             }
                             catch
                             {
+                                container = false;
                             }
                         }
                         //If the item is NOT a Static Container
-                        else
+                        if (!container)
                         {
                             //Program.Log(GetClassname(interactiveClass));
                             var item = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.LootItemBase); //EFT.InventoryLogic.Item
@@ -177,6 +209,7 @@ namespace eft_dma_radar
                                         Label = "Corpse",
                                         AlwaysShow = true,
                                     });
+                                    added = true;
                                 }
                                 //Finally we must have found a loose loot item, eg a keycard, backpack, gun, salewa. Anything not in a container or corpse.
                                 else
@@ -201,6 +234,7 @@ namespace eft_dma_radar
                                                 Position = pos,
                                                 Item = entry.Item
                                             });
+                                            added = true;
                                         }
                                     }
                                 }
@@ -209,9 +243,13 @@ namespace eft_dma_radar
                     }
                 }
                 catch { }
+                if (!added) {
+                    Program.Log($"Failed to load loot: {name}:{classNameStr} 0x{interactiveClass.ToString("X")}");
+                }
             }
             Loot = new(loot); // update readonly ref
             File.WriteAllLinesAsync("LootNames.txt", lootNames);
+            File.WriteAllLinesAsync("LootClassNames.txt", lootClassNames);
             File.WriteAllLinesAsync("PossibleLootNames.txt", possibleContainer);
             Program.Log("Loot parsing completed");
         }
@@ -301,17 +339,53 @@ namespace eft_dma_radar
 
                 foreach (var childItem in itemList.Data)
                 {
+                    var gameObjectName = "";
+                    var gameObjectClassName = "";
+                    var childItemIdStr = "";
                     try
                     {
+                        //var baseObject = Memory.ReadPtr(childItem + 0x0);
+                        gameObjectClassName = Memory.ReadString(Memory.ReadPtrChain(childItem, Offsets.Kernel.ClassName), 64);
+                        //gameObjectName = Memory.ReadString(Memory.ReadPtrChain(baseObject, new uint[] { Offsets.GameObject.ObjectClass, Offsets.GameObject.ObjectName }), 64);
                         var childItemTemplate = Memory.ReadPtr(childItem + Offsets.LootItemBase.ItemTemplate); // EFT.InventoryLogic.Item->_template // Offset: 0x0038 (Type: EFT.InventoryLogic.ItemTemplate)
                         var childItemIdPtr = Memory.ReadPtr(childItemTemplate + Offsets.ItemTemplate.BsgId);
-                        var childItemIdStr = Memory.ReadUnityString(childItemIdPtr).Replace("\\0", "");
-
+                        childItemIdStr = Memory.ReadUnityString(childItemIdPtr).Replace("\\0", "");
+                        
                         // Check to see if the child item has children
                         var childGridsArrayPtr = Memory.ReadPtr(childItem + Offsets.LootItemBase.Grids);   // -.GClassXXXX->Grids // Offset: 0x0068 (Type: -.GClass1497[])
                         GetItemsInGrid(childGridsArrayPtr, childItemIdStr, pos, loot);        // Recursively add children to the entity
                     }
-                    catch (Exception ee) { }
+                    catch (Exception ee) {
+                        if (gameObjectClassName.Contains("String"))
+                        {
+                            var uknownId = Memory.ReadString(childItem, 64);
+                            if (DyrkovMarketManager.AllItems.TryGetValue(uknownId, out var uknownEntry))
+                            {
+                                loot.Add(new LootItem
+                                {
+                                    Label = uknownEntry.Label,
+                                    AlwaysShow = uknownEntry.AlwaysShow,
+                                    Important = uknownEntry.Important,
+                                    Position = pos,
+                                    Item = uknownEntry.Item
+                                });
+                                continue;
+                            }
+                        }
+                        if (DyrkovMarketManager.AllItems.TryGetValue(childItemIdStr, out var childItemEntry))
+                        {
+                            loot.Add(new LootItem
+                            {
+                                Label = childItemEntry.Label,
+                                AlwaysShow = childItemEntry.AlwaysShow,
+                                Important = childItemEntry.Important,
+                                Position = pos,
+                                Item = childItemEntry.Item
+                            });
+                            continue;
+                        }
+                        Program.Log($"Failed to load loot from container: {childItemIdStr}#{gameObjectName}:{gameObjectClassName} 0x{childItem.ToString("X")}");
+                    }
                 }
 
             }

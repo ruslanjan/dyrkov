@@ -100,6 +100,13 @@ namespace eft_dma_radar
         /// </summary>
         [JsonPropertyName("maxDistance")]
         public float MaxDistance { get; set; }
+
+        /// <summary>
+        /// Max game distance to render targets in Aimview, 
+        /// and to display dynamic aimlines between two players.
+        /// </summary>
+        [JsonPropertyName("MaxKekDistance")]
+        public float MaxKekDistance { get; set; }
         /// <summary>
         /// 'Field of View' in degrees to display targets in the Aimview window.
         /// </summary>
@@ -127,6 +134,7 @@ namespace eft_dma_radar
             HideNames = false;
             LoggingEnabled = false;
             MaxDistance = 325;
+            MaxKekDistance = 250;
             AimViewFOV = 30;
             MinLootValue = 50000;
             MinImportantLootValue = 300000;
@@ -946,7 +954,9 @@ namespace eft_dma_radar
         /// <summary>
         /// Santa
         /// </summary>
-        followerBirdEye = 268435456
+        followerBirdEye = 268435456,
+
+        zryachiy = 0x20000000
     };
 
     [Flags]

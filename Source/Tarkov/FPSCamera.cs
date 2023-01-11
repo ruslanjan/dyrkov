@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Offsets;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
@@ -12,29 +13,40 @@ namespace eft_dma_radar.Source.Tarkov
     {
         public ulong p;
         private ulong ThermalVision;
+        private ulong NightVision;
 
         public FPSCamera(ulong p)
         {
             this.p = p;
             ThermalVision = this.GetComponent(p, "ThermalVision");
+            NightVision = this.GetComponent(p, "NightVision");
             Program.Log($"ThermalVision{ThermalVision.ToString("X")}");
         }
 
-        private bool thermal = false;
+        private int visionCycle = 0;
         //private ulong mask = 0;
 
         public void ToggleThermalVision()
         {
-            thermal = !thermal;
-            if (thermal)
+            visionCycle++;
+            if (visionCycle % 3 == 1)
             {
                 //mask = Memory.ReadPtr(ThermalVision + Offsets.ThermalVision.material);
                 Memory.Write(ThermalVision + Offsets.ThermalVision.On, new byte[] { 0x1, 0x0, 0x0, 0x0, 0x0, 0x0,  });
                 Memory.Write(ThermalVision + Offsets.ThermalVision.material, BitConverter.GetBytes(0L));
-            } else
+                Memory.Write(NightVision + Offsets.NightVision.On, new byte[] { 0x0 });
+            }
+            if (visionCycle % 3 == 2)
+            {
+                //mask = Memory.ReadPtr(ThermalVision + Offsets.ThermalVision.material);
+                Memory.Write(NightVision + Offsets.NightVision.On, new byte[] { 0x1 });
+                Memory.Write(ThermalVision + Offsets.ThermalVision.On, new byte[] { 0x0 });
+            }
+            if (visionCycle % 3 == 0)
             {
                 //mask = Memory.ReadPtr(ThermalVision + Offsets.ThermalVision.material);
                 Memory.Write(ThermalVision + Offsets.ThermalVision.On, new byte[] { 0x0 });
+                Memory.Write(NightVision + Offsets.NightVision.On, new byte[] { 0x0 });
             }
         }
 

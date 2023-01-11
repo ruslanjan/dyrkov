@@ -96,7 +96,7 @@ namespace eft_dma_radar.Source
 
 
         // EscapeFromTarkov.exe
-        public const string WINDOW_NAME = "EscapeFromTarkov";
+        public const string WINDOW_NAME = "Escape" + "FromTarkov";
         IntPtr handle = FindWindow(null, WINDOW_NAME);
         RECT rect = new RECT();
 
@@ -107,7 +107,7 @@ namespace eft_dma_radar.Source
         private readonly Stopwatch _fpsWatch = new();
         private int _fps = 0; // temp
         private int fps = 0;
-        readonly Config _config;
+        public readonly Config _config;
         private SKGLControl _canvas;
         private object _renderLock = new();
 
@@ -185,7 +185,7 @@ namespace eft_dma_radar.Source
             })
             {
                 IsBackground = true,
-                Priority = ThreadPriority.AboveNormal
+                //Priority = ThreadPriority.AboveNormal
             }.Start();
 
 
@@ -246,6 +246,10 @@ namespace eft_dma_radar.Source
         private bool[] inputMask = new bool[7];
         private void ProcessInput()
         {
+            if (LocalPlayer == null)
+            {
+                return;
+            }
             var i = 0;
             if (IsKeyPushedDown(Keys.F2) && inputMask[i])
             {
@@ -379,6 +383,12 @@ namespace eft_dma_radar.Source
 
                     try
                     {
+                        
+                        if (Memory.Loot != null && Memory.Loot.Filter != null && showLoot)
+                        {
+                            this.DrawLoot(canvas, Memory.Loot.Filter, view_matrix, sourcePlayer);
+                        }
+
                         if (sourcePlayer is not null && sourcePlayer.IsActive && sourcePlayer.IsAlive)
                         {
                             if (players is not null)
@@ -393,10 +403,6 @@ namespace eft_dma_radar.Source
                                     catch { }
                                 }
                             }
-                        }
-                        if (Memory.Loot != null && Memory.Loot.Filter != null && showLoot)
-                        {
-                            this.DrawLoot(canvas, Memory.Loot.Filter, view_matrix, sourcePlayer);
                         }
 
                         if (Memory.Grenades != null)
@@ -459,19 +465,28 @@ namespace eft_dma_radar.Source
 
         public void DrawLoot(SKCanvas canvas, ReadOnlyCollection<LootItem> items, Matrix4x4 view_matrix, Player sourcePlayer)
         {
-            List<Tuple<LootItem, Vector2>> points = new List<Tuple<LootItem, Vector2>>();
+            List<Tuple<LootItem, Vector2, float>> points = new List<Tuple<LootItem, Vector2, float>>();
 
 
             foreach (var item in items)
             {
-                var important = item.Important || Math.Max(item.Item.avg24hPrice, item.Item.traderPrice) >= _config.MinImportantLootValue;
+                var important = item.Important || DyrkovMarketManager.GetItemValuePerSlot(item.Item) >= _config.MinImportantLootValue;
                 SKPaint paint = important ? SKPaints.PaintImportantLoot : SKPaints.PaintLoot;
-                SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLoot;
+                SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLootBox;
 
                 var itemPos = item.Position;
                 float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
-                if (dist > 150f)
-                    continue;
+                if (dist > 50f && !important)
+                {
+                    if (dist < 150f)
+                        text = SKPaints.TextCloseLootBox;
+                    else
+                        text = SKPaints.TextFarLootBox;
+                    if (dist > 200f)
+                    {
+                        continue;
+                    }
+                }
                 Vector2 pos;
                 if (!w2s(view_matrix, new Vector3(itemPos.X, itemPos.Z, itemPos.Y), out pos))
                 {
@@ -479,7 +494,7 @@ namespace eft_dma_radar.Source
                 }
                 if (Vector2.Distance(new Vector2(this.Width / 2, this.Height / 2), pos) < 50)
                 {
-                    points.Add(new Tuple<LootItem, Vector2>(item, pos));
+                    points.Add(new Tuple<LootItem, Vector2, float>(item, pos, dist));
                 }
                 else
                 {
@@ -506,18 +521,25 @@ namespace eft_dma_radar.Source
             });
             {
                 // loot in the center
+                points.Sort((a, b) => a.Item3 == b.Item3 ? 0 : (a.Item3 < b.Item3 ? -1 : 1));
                 Vector2 pos = points[0].Item2;
                 var LineHeight = 16;
                 canvas.DrawRect(pos.X, pos.Y - 10, LineHeight * (points.Select(p => p.Item1.Label.Length).Max() + 6), 18 * points.Count, SKPaints.DarkTextbg);
                 foreach (var i in points)
                 {
                     var item = i.Item1;
-                    var important = item.Important || Math.Max(item.Item.avg24hPrice, item.Item.traderPrice) >= _config.MinImportantLootValue;
-                    SKPaint paint = important ? SKPaints.PaintImportantLoot : SKPaints.PaintLoot;
-                    SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLoot;
-
+                    var important = item.Important || DyrkovMarketManager.GetItemValuePerSlot(item.Item) >= _config.MinImportantLootValue;
+                    SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLootBox;
                     var itemPos = item.Position;
-                    float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
+                    float dist = i.Item3;
+                    if (dist > 150f && !important)
+                    {
+                        if (dist < 250f)
+                            text = SKPaints.TextCloseLootBox;
+                        else
+                            text = SKPaints.TextFarLootBox;
+                    }
+
                     canvas.DrawText($"{item.Label} | {(int)dist}", pos.X, pos.Y, text);
                     pos.Y += 18;
                 }
@@ -527,16 +549,17 @@ namespace eft_dma_radar.Source
 
         public void DrawPlayerKek(SKCanvas canvas, Player player, Matrix4x4 view_matrix, Player sourcePlayer)
         {
-            SKPaint paint = player.GetPaint(false);
-            SKPaint text = player.GetText(false);
+            var playerPos = player.Position;
+            float dist = Vector3.Distance(sourcePlayer.Position, playerPos);
+            SKPaint paint = player.GetKekPaint(dist);
+            SKPaint text = player.GetKekText(dist);
 
             if (player.Type == PlayerType.LocalPlayer) return; // don't draw self
-            var playerPos = player.Position;
             var headPos = player.getBonePose(Player.bones.HumanHead);
             var spinePos = player.getBonePose(Player.bones.HumanSpine3);
             var pelvisPos = player.getBonePose(Player.bones.HumanPelvis);
-
-            float dist = Vector3.Distance(sourcePlayer.Position, playerPos);
+            
+            var visible = dist < _config.MaxKekDistance;
 
             //var bone_matrix = Memory.ReadPtrChain(player.Base, Offsets.Player.bone_matrix);
             //var headTransform = Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)133) * 0x8));
@@ -551,8 +574,26 @@ namespace eft_dma_radar.Source
             {
                 return;
             }
-            var health = player.IsAlive ? player.Health : 0;
+            var health = player.IsAlive ? player.Health : 0; 
             canvas.DrawText($"{player.Name} {health} {(int)dist}", pos.X, pos.Y, text);
+            var wep = "";
+            if (false && player.Gear is not null) // Get weapon info via GearManager
+            {
+                wep = "None";
+                GearItem gearItem = null;
+                if (!player.Gear.TryGetValue("FirstPrimaryWeapon", out gearItem))
+                    if (!player.Gear.TryGetValue("SecondPrimaryWeapon", out gearItem))
+                        player.Gear.TryGetValue("Holster", out gearItem);
+                if (gearItem is not null)
+                {
+                    wep = gearItem.Short; // Get 'short' weapon name/info
+                    //canvas.DrawText($"Wep:{wep}", pos.X, pos.Y + 14, text);
+                }
+            }
+            var side = player.isUsec ? "Usec:" : "";
+            if (side == "")
+                side = player.isBear ? "Bear:" : "";
+            canvas.DrawText($"{side}{wep}", pos.X, pos.Y + 14, text);
             if (!player.IsActive || !player.IsAlive)
                 return;
 
@@ -608,6 +649,11 @@ namespace eft_dma_radar.Source
             h = pos.Y - topHeadScreen.Y;
 
             canvas.DrawRect(topHeadScreen.X - h / 2 / 2, topHeadScreen.Y, h / 2, h, paint);
+
+            if (!visible)
+            {
+                return;
+            }
 
             var bonesScreen = new Dictionary<Player.bones, Vector2>();
             foreach (var b in Player.TargetBones)

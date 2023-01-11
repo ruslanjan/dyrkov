@@ -1,4 +1,5 @@
 ﻿using SkiaSharp;
+using System.Collections.Generic;
 
 namespace eft_dma_radar
 {
@@ -85,103 +86,104 @@ namespace eft_dma_radar
         /// <summary>
         /// Gets drawing paintbrush based on Player Type.
         /// </summary>
-        public static SKPaint GetPaint(this Player player, bool radar=true)
+        public static SKPaint GetPaint(this Player player)
         {
-            if (radar)
+            switch (player.Type)
             {
-                switch (player.Type)
-                {
-                    case PlayerType.LocalPlayer:
-                        return SKPaints.PaintLocalPlayer;
-                    case PlayerType.Teammate:
-                        return SKPaints.PaintTeammate;
-                    case PlayerType.PMC:
-                        return SKPaints.PaintPMC;
-                    case PlayerType.AIScav:
-                        return SKPaints.PaintScav;
-                    case PlayerType.AIRaider:
-                        return SKPaints.PaintRaider;
-                    case PlayerType.AIBoss:
-                        return SKPaints.PaintBoss;
-                    case PlayerType.PScav:
-                        return SKPaints.PaintPScav;
-                    case PlayerType.SpecialPlayer:
-                        return SKPaints.PaintSpecial;
-                    default:
-                        return SKPaints.PaintPMC;
-                }
-            } else
+                case PlayerType.LocalPlayer:
+                    return SKPaints.PaintLocalPlayer;
+                case PlayerType.Teammate:
+                    return SKPaints.PaintTeammate;
+                case PlayerType.PMC:
+                    return SKPaints.PaintPMC;
+                case PlayerType.AIScav:
+                    return SKPaints.PaintScav;
+                case PlayerType.AIRaider:
+                    return SKPaints.PaintRaider;
+                case PlayerType.AIBoss:
+                    return SKPaints.PaintBoss;
+                case PlayerType.PScav:
+                    return SKPaints.PaintPScav;
+                case PlayerType.SpecialPlayer:
+                    return SKPaints.PaintSpecial;
+                default:
+                    return SKPaints.PaintPMC;
+            }
+        }
+
+        public static SKPaint GetKekPaint(this Player player, float dist)
+        {
+            var close = dist < 250f;
+            switch (player.Type)
             {
-                switch (player.Type)
-                {
-                    case PlayerType.LocalPlayer:
-                        return SKPaints.PaintLocalPlayer;
-                    case PlayerType.Teammate:
-                        return SKPaints.PaintTeammate;
-                    case PlayerType.PMC:
-                        return SKPaints.PaintPMCBox;
-                    case PlayerType.AIScav:
-                        return SKPaints.PaintScavBox;
-                    case PlayerType.AIRaider:
-                        return SKPaints.PaintRaider;
-                    case PlayerType.AIBoss:
-                        return SKPaints.PaintBoss;
-                    case PlayerType.PScav:
-                        return SKPaints.PaintPScav;
-                    case PlayerType.SpecialPlayer:
-                        return SKPaints.PaintSpecial;
-                    default:
-                        return SKPaints.PaintPMCBox;
-                }
+                case PlayerType.LocalPlayer:
+                    return SKPaints.PaintLocalPlayer;
+                case PlayerType.Teammate:
+                    return SKPaints.PaintTeammate;
+                case PlayerType.PMC:
+                    return close ? SKPaints.PaintPMCBox : SKPaints.PaintFarPMCBox;
+                case PlayerType.AIScav:
+                    return close ? SKPaints.PaintScavBox : SKPaints.PaintFarScavBox;
+                case PlayerType.AIRaider:
+                    return SKPaints.PaintRaider;
+                case PlayerType.AIBoss:
+                    return SKPaints.PaintBoss;
+                case PlayerType.PScav:
+                    return close ? SKPaints.PaintPScavBox : SKPaints.PaintFarPScavBox;
+                case PlayerType.SpecialPlayer:
+                    return SKPaints.PaintSpecial;
+                default:
+                    return SKPaints.PaintPMCBox;
             }
         }
         /// <summary>
         /// Gets text paintbrush based on Player Type.
         /// </summary>
-        public static SKPaint GetText(this Player player, bool isRadar=true)
+        public static SKPaint GetText(this Player player)
         {
-            if (isRadar)
+            switch (player.Type)
             {
-                switch (player.Type)
-                {
-                    case PlayerType.Teammate:
-                        return SKPaints.TextTeammate;
-                    case PlayerType.PMC:
-                        return SKPaints.TextPMC;
-                    case PlayerType.AIScav:
-                        return SKPaints.TextScav;
-                    case PlayerType.AIRaider:
-                        return SKPaints.TextRaider;
-                    case PlayerType.AIBoss:
-                        return SKPaints.TextBoss;
-                    case PlayerType.PScav:
-                        return SKPaints.TextWhite;
-                    case PlayerType.SpecialPlayer:
-                        return SKPaints.TextSpecial;
-                    default:
-                        return SKPaints.TextPMC;
-                }
-            } else
+                case PlayerType.Teammate:
+                    return SKPaints.TextTeammate;
+                case PlayerType.PMC:
+                    return SKPaints.TextPMC;
+                case PlayerType.AIScav:
+                    return SKPaints.TextScav;
+                case PlayerType.AIRaider:
+                    return SKPaints.TextRaider;
+                case PlayerType.AIBoss:
+                    return SKPaints.TextBoss;
+                case PlayerType.PScav:
+                    return SKPaints.TextWhite;
+                case PlayerType.SpecialPlayer:
+                    return SKPaints.TextSpecial;
+                default:
+                    return SKPaints.TextPMC;
+            }
+           
+        }
+
+        public static SKPaint GetKekText(this Player player, float dist)
+        {
+            var close = dist < 250f;
+            switch (player.Type)
             {
-                switch (player.Type)
-                {
-                    case PlayerType.Teammate:
-                        return SKPaints.TextTeammate;
-                    case PlayerType.PMC:
-                        return SKPaints.TextPMCBox;
-                    case PlayerType.AIScav:
-                        return SKPaints.TextScavBox;
-                    case PlayerType.AIRaider:
-                        return SKPaints.TextRaider;
-                    case PlayerType.AIBoss:
-                        return SKPaints.TextBoss;
-                    case PlayerType.PScav:
-                        return SKPaints.TextWhite;
-                    case PlayerType.SpecialPlayer:
-                        return SKPaints.TextSpecial;
-                    default:
-                        return SKPaints.TextPMCBox;
-                }
+                case PlayerType.Teammate:
+                    return SKPaints.TextTeammate;
+                case PlayerType.PMC:
+                    return close ? SKPaints.TextPMCBox : SKPaints.TextFarPMCBox;
+                case PlayerType.AIScav:
+                    return close ? SKPaints.TextScavBox : SKPaints.TextFarScavBox;
+                case PlayerType.AIRaider:
+                    return SKPaints.TextRaider;
+                case PlayerType.AIBoss:
+                    return SKPaints.TextBoss;
+                case PlayerType.PScav:
+                    return close ? SKPaints.TextPScavBox : SKPaints.TextFarPScavBox;
+                case PlayerType.SpecialPlayer:
+                    return SKPaints.TextSpecial;
+                default:
+                    return SKPaints.TextPMCBox;
             }
         }
 
@@ -410,6 +412,12 @@ namespace eft_dma_radar
                     {
                         Name = "BirdEye",
                         Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.zryachiy:
+                    return new AIRole()
+                    {
+                        Name = "Zryachiy",
+                        Type = PlayerType.AIBoss
                     };
 
                 default:

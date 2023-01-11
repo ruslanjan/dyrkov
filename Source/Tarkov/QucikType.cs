@@ -38,6 +38,12 @@ namespace TarkovDev
         [JsonProperty("shortName")]
         public string ShortName { get; set; }
 
+        [JsonProperty("width")]
+        public int width { get; set; }
+
+        [JsonProperty("height")]
+        public int height { get; set; }
+
         [JsonProperty("avg24hPrice")]
         public long Avg24HPrice { get; set; }
 

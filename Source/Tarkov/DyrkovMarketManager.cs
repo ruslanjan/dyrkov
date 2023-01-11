@@ -1,5 +1,6 @@
 ﻿using eft_dma_radar;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -23,7 +24,7 @@ namespace eft_dma_radar
             List<TarkovDev.Item> jsonItems = null;
             var allItems = new Dictionary<string, LootItem>(StringComparer.OrdinalIgnoreCase);
             // Get Market Loot
-            if (true || !File.Exists("market.json") ||
+            if (!File.Exists("market.json") ||
                 File.GetLastWriteTime("market.json").AddHours(24) < DateTime.Now) // only update every 24h
             // if (false)
             {
@@ -42,13 +43,17 @@ query {
     id,
    	shortName,
     avg24hPrice,
+    width,
+    height,
     sellFor {
       priceRUB,
     }
   }
 }"}
                     };
+                    Program.Log("Fetching market data");
                     using var req = client.PostAsJsonAsync("https://api.tarkov.dev/graphql", data).Result;
+                    Program.Log("market data fetched");
                     var json = req.Content.ReadAsStringAsync().Result;
                     var res = TarkovDev.TarkovDevResponse.FromJson(json);
                     jsonItems = res.Data.Items;
@@ -94,7 +99,7 @@ query {
                     var value = GetItemValue(item);
                     allItems.TryAdd(item.bsgId, new LootItem()
                     {
-                        Label = $"[{FormatNumber(value)}] {item.shortName}",
+                        Label = $"[{FormatNumber(value)}~{FormatNumber(value/Math.Max(item.width * item.height, 1))}] {item.shortName}",
                         Item = item
                     });
                 }
@@ -116,12 +121,17 @@ query {
             else return num.ToString();
         }
 
-        private static int GetItemValue(TarkovDev.Item item)
+        public static int GetItemValue(TarkovDev.Item item)
         {
             if (item.avg24hPrice > item.traderPrice)
                 return item.avg24hPrice;
             else
                 return item.traderPrice;
+        }
+
+        public static int GetItemValuePerSlot(TarkovDev.Item item)
+        {
+            return GetItemValue(item) / Math.Max(item.width * item.height, 1);
         }
         #endregion
     }

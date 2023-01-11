@@ -355,7 +355,8 @@ namespace eft_dma_radar
                         {
                             Program.Log($"FoundCamera BaseOpticCamera(Clone) 0x{camera_object.ToString("X")}");
                             _opticCamera = new OpticCamera(camera_object);
-                            if (_opticCamera.p == 0) ;
+                            if (_opticCamera.p == 0)
+                                return false;
                             return true;
                         }
                         /*if (camera_target_name.Contains("FPS Camera", StringComparison.OrdinalIgnoreCase))

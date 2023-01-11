@@ -345,9 +345,25 @@ namespace eft_dma_radar
             IsAntialias = true,
             FilterQuality = SKFilterQuality.High
         };
+        public static readonly SKPaint PaintFarPMCBox = new SKPaint()
+        {
+            Color = new SKColor(0xDDDD0000),
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
         public static readonly SKPaint PaintScavBox = new SKPaint()
         {
             Color = SKColors.Yellow,
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintFarScavBox = new SKPaint()
+        {
+            Color = new SKColor(0xaaaaaa00),
             StrokeWidth = 0.3f,
             Style = SKPaintStyle.Stroke,
             IsAntialias = true,
@@ -363,6 +379,16 @@ namespace eft_dma_radar
             Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
             FilterQuality = SKFilterQuality.High
         };
+        public static readonly SKPaint TextFarPMCBox = new SKPaint()
+        {
+            Color = new SKColor(0xDDDD0000),
+            IsStroke = false,
+            TextSize = 10,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
+            FilterQuality = SKFilterQuality.High
+        };
         public static readonly SKPaint TextScavBox = new SKPaint()
         {
             Color = SKColors.Yellow,
@@ -371,6 +397,85 @@ namespace eft_dma_radar
             TextEncoding = SKTextEncoding.Utf8,
             IsAntialias = true,
             Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
+            FilterQuality = SKFilterQuality.High
+        };
+
+        public static readonly SKPaint TextFarScavBox = new SKPaint()
+        {
+            Color = new SKColor(0xaaaaaa00),
+            IsStroke = false,
+            TextSize = 10,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintPScavBox = new SKPaint()
+        {
+            Color = SKColors.White,
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintFarPScavBox = new SKPaint()
+        {
+            Color = SKColors.White,
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint TextPScavBox = new SKPaint()
+        {
+            Color = SKColors.Yellow,
+            IsStroke = false,
+            TextSize = 12,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
+            FilterQuality = SKFilterQuality.High
+        };
+
+        public static readonly SKPaint TextFarPScavBox = new SKPaint()
+        {
+            Color = new SKColor(0xaaaaaa00),
+            IsStroke = false,
+            TextSize = 10,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Normal),
+            FilterQuality = SKFilterQuality.High
+        };
+
+        public static readonly SKPaint TextLootBox = new SKPaint()
+        {
+            Color = SKColors.WhiteSmoke,
+            IsStroke = false,
+            TextSize = 12,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial"),
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint TextCloseLootBox = new SKPaint()
+        {
+            Color = SKColors.LightGray,
+            IsStroke = false,
+            TextSize = 11,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial"),
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint TextFarLootBox = new SKPaint()
+        {
+            Color = SKColors.DarkGray,
+            IsStroke = false,
+            TextSize = 10,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial"),
             FilterQuality = SKFilterQuality.High
         };
         #endregion

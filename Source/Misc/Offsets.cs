@@ -52,7 +52,7 @@ namespace Offsets
 
     public struct Config
     {
-        public const uint Inertia = 0xC8; // \uE02B
+        public const uint Inertia = 0xD0; // \uE02B
     }
 
     public struct Inertia
@@ -68,9 +68,9 @@ namespace Offsets
     public struct LocalGameWorld // -.ClientLocalGameWorld : ClientGameWorld
     {
         public const uint ExfilController = 0x18; // to ExfilController
-        public const uint LootList = 0x70; // to UnityList
-        public const uint RegisteredPlayers = 0x90; // to RegisteredPlayers
-        public const uint Grenades = 0x108; // to Grenades
+        public const uint LootList = 0x80; // to UnityList
+        public const uint RegisteredPlayers = 0xA0; // to RegisteredPlayers
+        public const uint Grenades = 0x128; // to Grenades
     }
 
     public struct ThermalVision
@@ -123,19 +123,20 @@ namespace Offsets
         };
         
         public const uint MovementContext = 0x40; // to MovementContext
-        public const uint Corpse = 0x338; // EFT.Interactive.Corpse
-        public const uint Profile = 0x4E8; // to Profile
-        public const uint HealthController = 0x520; // to HealthController
-        public const uint InventoryController = 0x530; // to InventoryController
-        public const uint Physical = 0x4f8;
-        public const uint ProceduralWeaponAnimation = 0x198;
-        public const uint IsLocalPlayer = 0x7FF; // bool
+        public const uint Corpse = 0x350; // EFT.Interactive.Corpse
+        public const uint Profile = 0x520; // to Profile
+        public const uint HealthController = 0x558; // to HealthController
+        public const uint InventoryController = 0x568; // to InventoryController
+        public const uint Physical = 0x530;
+        public const uint ProceduralWeaponAnimation = 0x1A0;
+        public const uint IsLocalPlayer = 0x837; // bool
     }
 
     public struct ProceduralWeaponAnimation
     {
         public const uint Breath = 0x28;
         public const uint Shooting = 0x48;
+        public const uint Mask = 0x118;
     }
     public struct Breath
     {
@@ -146,11 +147,8 @@ namespace Offsets
     {
         public const uint MaxStamina = 0x38;
         public const uint MaxHandStamina = 0x40;
-        public const uint MaxOxygen = 0x40;
+        public const uint MaxOxygen = 0x48;
         public const uint buff = 0x50;
-        public const uint AccountId = 0x18; // unity string
-        public const uint PlayerInfo = 0x28; // to PlayerInfo
-        public const uint Stats = 0xE8; // to Stats
     }
 
     public struct Profile // EFT.Profile
@@ -158,7 +156,7 @@ namespace Offsets
         public const uint Id = 0x10; // unity string
         public const uint AccountId = 0x18; // unity string
         public const uint PlayerInfo = 0x28; // to PlayerInfo
-        public const uint Stats = 0xE8; // to Stats
+        public const uint Stats = 0xF0; // to Stats
         public const uint Skills = 0x60;
     }
     public struct Stats // -.GClass05E4
@@ -181,20 +179,20 @@ namespace Offsets
         public const uint PerceptionHearing = 0x118;
         public const uint MagDrillsInventoryCheckSpeed = 0x190;
         public const uint MagDrillsInventoryCheckAccuracy = 0x198;
-        public const uint AimMasterSpeed = 0x298;
-        public const uint AimMasterWiggle = 0x2A0;
-        public const uint RecoilControlImprove = 0x2B0;
-        public const uint TroubleFixing = 0x2C0;
-        public const uint ThrowingStrengthBuff = 0x2E8;
-        public const uint ThrowingEnergyExpenses = 0x2F0;
-        public const uint DrawSpeed = 0x300;
+        public const uint AimMasterSpeed = 0x2D0;
+        public const uint AimMasterWiggle = 0x2D8;
+        public const uint AimMasterElite = 0x2E0;
+        public const uint RecoilControlImprove = 0x2E8;
+        public const uint TroubleFixing = 0x2F8;
+        public const uint ThrowingStrengthBuff = 0x320;
+        public const uint ThrowingEnergyExpenses = 0x328;
+        public const uint DrawSpeed = 0x338;
         //public const uint ProneMovementSpeed = 0x468;
         //public const uint SearchBuffSpeed = 0x480;
         //public const uint SurgerySpeed = 0x498;
 
         // bools
-        public const uint SearchDouble = 0x488;
-        public const uint AimMasterElite = 0x2A8;
+        public const uint SearchDouble = 0x4C0;
         public const uint MagDrillsInstantCheck = 0x1A0;
         public const uint MagDrillsLoadProgression = 0x1A8;
         public const uint StressBerserk = 0xF0;
@@ -207,11 +205,11 @@ namespace Offsets
         public const uint Nickname = 0x10; // unity string
         public const uint MainProfileNickname = 0x18; // unity string
         public const uint GroupId = 0x20; // ptr to UnityString (0/null if solo or bot)
-        public const uint Settings = 0x48; // to PlayerSettings 
-        public const uint PlayerSide = 0x68; // int32
-        public const uint RegDate = 0x6C; // int32
-        public const uint MemberCategory = 0x84; // int32 enum
-        public const uint Experience = 0x88; // int32
+        public const uint Settings = 0x50; // to PlayerSettings 
+        public const uint PlayerSide = 0x70; // int32
+        public const uint RegDate = 0x74; // int32
+        public const uint MemberCategory = 0x8C; // int32 enum
+        public const uint Experience = 0x90; // int32
     }
     public struct PlayerSettings // GClass10F9
     {
@@ -219,11 +217,11 @@ namespace Offsets
     }
     public struct MovementContext
     {
-        public const uint Rotation = 0x22C; // vector2
+        public const uint Rotation = 0x234;// 0x22C; // vector2
     }
     public struct InventoryController // -.GClass1A98
     {
-        public const uint Inventory = 0x128; // to Inventory
+        public const uint Inventory = 0x130; // to Inventory
     }
     public struct Inventory // GClass1BBE
     {
@@ -240,7 +238,7 @@ namespace Offsets
     }
     public struct HealthController // -.GInterface7AEE
     {
-        public static readonly uint[] To_HealthEntries = { 0x58, 0x18 }; // to HealthEntries // if its wrong try { 0x50, 0x18 }
+        public static readonly uint[] To_HealthEntries = { 0x68, 0x18 }; // to HealthEntries // if its wrong try { 0x50, 0x18 }
     }
     public struct HealthEntries
     {
@@ -269,7 +267,7 @@ namespace Offsets
     {
         public const uint LootBaseObject = 0x10; // to LootBaseObject
         public const uint LootItemBase = 0x0b0;//0x50; // to LootItemBase
-        public const uint ContainerItemOwner = 0x108; // to LootableContainer.ItemOwner
+        public const uint ContainerItemOwner = 0x110; // to LootableContainer.ItemOwner
     }
 
     /*
@@ -324,7 +322,7 @@ namespace Offsets
     }
     public struct ContainerItemOwner
     {
-        public const uint LootItemBase = 0xB8; // to LootItemBase
+        public const uint LootItemBase = 0xC0; // to LootItemBase
     }
     public struct Grids
     {
