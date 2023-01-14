@@ -1,0 +1,73 @@
+5780cf7f2459777de4559322 ## Dorms Marked Key (example - one entry per line)
+5c94bbff86f7747ee735c08f
+5c12613b86f7743bbe2c3f76
+5c12620d86f7743f8b198b72
+590c621186f774138d11ea29
+5eff09cd30a7dc22fd1ddfed
+5a0ee30786f774023b6ee08f
+63a39fc0af870e651d58e6ae
+5e42c83786f7742a021fdf3c
+5e42c81886f7742a01529f57
+63a399193901f439517cafb6
+
+## vests armor
+5e4abb5086f77406975c9342 ## slick
+6038b4b292ec1c3103795a0b
+6038b4ca92ec1c3103795a0d
+5fd4c474dd870108a754b241 ## hex
+5c0e625a86f7742d77340f62 ## BNTI Zhuk-6a body armor
+60a283193cb70855c43a381d ## NFM THOR Integrated Carrier body armor
+545cdb794bdc2d3a198b456a ## 6B43 6A Zabralo-Sh body armor
+63737f448b28897f2802b874 ## Hexatac HPC Plate Carrier (Multicam Black)
+5f5f41476bdad616ad46d631 ## NPP KlASS Korund-VM body armor
+5ca2151486f774244a3b8d30 ## FORT Redut-M body armor
+5c0e541586f7747fa54205c9 ## 6B13 M modified assault armor (Tan)
+5b44cd8b86f774503d30cba2 ## IOTV Gen4 body armor 
+5b44cf1486f77431723e3d05
+5b44d0de86f774503d30cba8
+5ab8e79e86f7742d8b372e78 ## BNTI Gzhel-K body armor
+5e9dacf986f774054d6b89f4 ## FORT Defender-2 body armor
+5ca21c6986f77479963115a7 ## FORT Redut-T5 body armor
+5c0e655586f774045612eeb2 ## HighCom Trooper TFO body armor (Multicam)
+
+## chest rigs
+628cd624459354321c4b7fa2 ## Tasmanian Tiger SK plate carrier (Multicam Black)
+609e860ebd219504d8507525 ## Crye Precision AVS MBAV (Tagilla Edition)
+5b44cad286f77402a54ae7e5 ## 5.11 Tactical TacTec plate carrier
+5e4ac41886f77406a511c9a8 ## Ars Arma CPC MOD.2 plate carrier
+628b9c7d45122232a872358f ## Crye Precision CPC plate carrier (Goons Edition)
+628b9784bcf6e2659e09b8a2 ## S&S Precision PlateFrame plate carrier (Goons Edition)
+60a3c68c37ea821725773ef5 ## CQC Osprey MK4A plate carrier (Protection, MTP)
+628d0618d1ba6e4fa07ce5a4 ## NPP KlASS Bagariy armored rig	
+
+5df8a42886f77412640e2e75 ## Velocity Systems MPPV Multi-Purpose Patrol Vest	
+
+## Helmets
+5ca20ee186f774799474abc2 ## Vulkan-5 (LShZ-5) bulletproof helmet
+5ca2113f86f7740b2547e1d2 ## Vulkan-5 face
+5aa7e276e5b5b000171d0647 ## Altyn bulletproof helmet
+5aa7e373e5b5b000137b76f0 ## Altyn face
+5e00c1ad86f774747333222c ## Team Wendy EXFIL Ballistic Helmet (Black)
+5e00cdd986f7747473332240 ## Team Wendy EXFIL Ballistic face shield (Black)
+5e01f37686f774773c6f6c15
+5e00cfa786f77469dc6e5685 ## Team Wendy EXFIL Ear Covers (Black)
+5e01f31d86f77465cf261343
+5e01ef6886f77445f643baa4 ## Team Wendy EXFIL Ballistic Helmet (Coyote Brown)
+5d6d3716a4b9361bc8618872 ## BNTI LShZ-2DTM helmet
+5d6d3829a4b9361bc8618943 ## LShZ-2DTM face shield
+5d6d3be5a4b9361bc73bc763 ## LShZ-2DTM aventail
+5ea17ca01412a1425304d1c0 ## Diamond Age Bastion helmet
+5ea18c84ecf1982c7712d9a2 ## Diamond Age Bastion helmet armor plate
+5f60c74e3b85f6263c145586 ## Rys-T bulletproof helmet
+5f60c85b58eff926626a60f7 ## Rys-T face shield
+
+
+## cigarettes
+573476f124597737e04bf328
+5734770f24597738025ee254
+
+## ammo
+5737292724597765e5728562 ## 5.45x39mm BP gs ammo pack (120 pcs)
+560d75f54bdc2da74d8b4573 ## 7.62x54mm R SNB gzh ammo pack (30 pcs)
+5c1262a286f7743f8a69aab2 ## 5.45x39mm PPBS gs \"Igolnik\" ammo pack (30 pcs)
+54527ac44bdc2d36668b4567

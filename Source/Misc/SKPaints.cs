@@ -347,7 +347,7 @@ namespace eft_dma_radar
         };
         public static readonly SKPaint PaintFarPMCBox = new SKPaint()
         {
-            Color = new SKColor(0xDDDD0000),
+            Color = new SKColor(0xCCCC0000),
             StrokeWidth = 0.3f,
             Style = SKPaintStyle.Stroke,
             IsAntialias = true,
@@ -381,7 +381,7 @@ namespace eft_dma_radar
         };
         public static readonly SKPaint TextFarPMCBox = new SKPaint()
         {
-            Color = new SKColor(0xDDDD0000),
+            Color = new SKColor(0xCCCC0000),
             IsStroke = false,
             TextSize = 10,
             TextEncoding = SKTextEncoding.Utf8,

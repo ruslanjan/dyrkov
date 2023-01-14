@@ -678,8 +678,7 @@ namespace eft_dma_radar
             if (_filterEntry is null ||
                 _filterEntry.Trim() == string.Empty)
             {
-                var value = DyrkovMarketManager.GetItemValuePerSlot(item.Item);
-                if (item.Important || value >= _config.MinImportantLootValue) return true;
+                if (item.isImportant(_config.MinImportantLootValue, _config.MinImportantLootValuePerSlot)) return true;
                 else return false;
             }
             if (item.Important) return true;
@@ -709,6 +708,7 @@ namespace eft_dma_radar
                 groupBox_Loot.Visible = false;
                 _config.MinLootValue = int.Parse(textBox_LootRegValue.Text);
                 _config.MinImportantLootValue = int.Parse(textBox_LootImpValue.Text);
+                _config.MinImportantLootValuePerSlot = int.Parse(textBox_lootImportantPerSlot.Text);
                 textBox_LootFilterByName.Text = textBox_LootFilterByName.Text?.Trim(); // Trim spaces
                 _filterEntry = new string(textBox_LootFilterByName.Text); // deep copy string
                 this.Loot?.ApplyFilter(_filterEntry);
@@ -1257,6 +1257,20 @@ namespace eft_dma_radar
         private void groupBox_Loot_Enter_2(object sender, EventArgs e)
         {
 
+        }
+
+        private void textBox_lootImportantPerSlot_TextChanged(object sender, EventArgs e)
+        {
+            if (!int.TryParse(textBox_lootImportantPerSlot.Text, out var i)) textBox_lootImportantPerSlot.Text = "0";
+            button_LootApply.Enabled = true;
+        }
+
+        private void textBox_lootImportantPerSlot_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode is Keys.Enter)
+            {
+                LootApply();
+            }
         }
     }
     #endregion

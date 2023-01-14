@@ -473,6 +473,12 @@ namespace eft_dma_radar
         public TarkovDev.Item Item { get; init; } = new();
         public bool AlwaysShow { get; init; } = false;
 
+
+        public bool isImportant(int MinImportantLootValue, int MinImportantLootValuePerSlot)
+        {
+            return Important || DyrkovMarketManager.GetItemValuePerSlot(Item) >= MinImportantLootValuePerSlot || DyrkovMarketManager.GetItemValue(Item) >= MinImportantLootValue;
+        }
+
     }
     #endregion
 }

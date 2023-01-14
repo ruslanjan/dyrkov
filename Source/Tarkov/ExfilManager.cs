@@ -74,6 +74,7 @@ namespace eft_dma_radar
     {
         public ulong BaseAddr { get; }
         public Vector3 Position { get; }
+        public String name { get; }
         public ExfilStatus Status { get; private set; } = ExfilStatus.Closed;
 
         public Exfil(ulong baseAddr)
@@ -81,6 +82,8 @@ namespace eft_dma_radar
             this.BaseAddr = baseAddr;
             var transform_internal = Memory.ReadPtrChain(baseAddr, Offsets.GameObject.To_TransformInternal);
             Position = new Transform(transform_internal).GetPosition();
+            var name_ptr = Memory.ReadPtr(Memory.ReadPtr(baseAddr + Offsets.Exfil.ExfilTriggerSettings) + Offsets.ExfilTriggerSettings.Name);
+            name = Memory.ReadUnityString(name_ptr);
         }
 
         /// <summary>

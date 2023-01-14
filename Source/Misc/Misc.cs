@@ -122,6 +122,11 @@ namespace eft_dma_radar
         /// </summary>
         [JsonPropertyName("minImportantLootValue")]
         public int MinImportantLootValue { get; set; }
+        /// <summary>
+        /// Minimum loot value (rubles) to display 'important loot' on map.
+        /// </summary>
+        [JsonPropertyName("minImportantLootValuePerSlot")]
+        public int MinImportantLootValuePerSlot { get; set; }
 
         public Config()
         {
@@ -137,7 +142,8 @@ namespace eft_dma_radar
             MaxKekDistance = 250;
             AimViewFOV = 30;
             MinLootValue = 50000;
-            MinImportantLootValue = 300000;
+            MinImportantLootValue = 30000;
+            MinImportantLootValuePerSlot = 80000;
             PrimaryTeammateId = null;
         }
 

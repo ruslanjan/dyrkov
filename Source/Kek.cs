@@ -383,7 +383,10 @@ namespace eft_dma_radar.Source
 
                     try
                     {
-                        
+                        if (Memory.Exfils != null)
+                        {
+                            DrawExfils(canvas, view_matrix, sourcePlayer);
+                        }
                         if (Memory.Loot != null && Memory.Loot.Filter != null && showLoot)
                         {
                             this.DrawLoot(canvas, Memory.Loot.Filter, view_matrix, sourcePlayer);
@@ -466,16 +469,26 @@ namespace eft_dma_radar.Source
         public void DrawLoot(SKCanvas canvas, ReadOnlyCollection<LootItem> items, Matrix4x4 view_matrix, Player sourcePlayer)
         {
             List<Tuple<LootItem, Vector2, float>> points = new List<Tuple<LootItem, Vector2, float>>();
-
-
+            List<Tuple<LootItem, float>> sorted = new List<Tuple<LootItem, float>>();
             foreach (var item in items)
             {
-                var important = item.Important || DyrkovMarketManager.GetItemValuePerSlot(item.Item) >= _config.MinImportantLootValue;
+                var itemPos = item.Position;
+                float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
+                sorted.Add(Tuple.Create(item, dist));
+            }
+            sorted.Sort((a, b) => a.Item2 == b.Item2 ? 0 : (a.Item2 > b.Item2 ? 1 : -1));
+
+            int Yfixer = 0;
+            foreach (var itemSorted in sorted)
+            {
+                var item = itemSorted.Item1;
+                var important = item.isImportant(_config.MinImportantLootValue, _config.MinImportantLootValuePerSlot);
                 SKPaint paint = important ? SKPaints.PaintImportantLoot : SKPaints.PaintLoot;
                 SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLootBox;
 
                 var itemPos = item.Position;
-                float dist = Vector3.Distance(sourcePlayer.Position, itemPos);
+                float dist = itemSorted.Item2;
+                var itemCollapse = sourcePlayer.kekBotOn;
                 if (dist > 50f && !important)
                 {
                     if (dist < 150f)
@@ -489,6 +502,17 @@ namespace eft_dma_radar.Source
                 }
                 Vector2 pos;
                 if (!w2s(view_matrix, new Vector3(itemPos.X, itemPos.Z, itemPos.Y), out pos))
+                {
+                    continue;
+                }
+                
+
+                if (itemCollapse)
+                {
+                    Yfixer += 11;
+                    pos.Y += Yfixer;
+                }
+                if (pos.X > this.Width || pos.X < 0 || pos.Y > this.Height || pos.Y < 0)
                 {
                     continue;
                 }
@@ -528,7 +552,7 @@ namespace eft_dma_radar.Source
                 foreach (var i in points)
                 {
                     var item = i.Item1;
-                    var important = item.Important || DyrkovMarketManager.GetItemValuePerSlot(item.Item) >= _config.MinImportantLootValue;
+                    var important = item.isImportant(_config.MinImportantLootValue, _config.MinImportantLootValuePerSlot);
                     SKPaint text = important ? SKPaints.TextImportantLoot : SKPaints.TextLootBox;
                     var itemPos = item.Position;
                     float dist = i.Item3;
@@ -544,6 +568,27 @@ namespace eft_dma_radar.Source
                     pos.Y += 18;
                 }
 
+            }
+        }
+
+        public void DrawExfils(SKCanvas canvas, Matrix4x4 view_matrix, Player sourcePlayer)
+        {
+            var exfils = Memory.Game.Exfils;
+            foreach (var exfil in exfils)
+            {
+                SKPaint paint = exfil.Status == ExfilStatus.Open ? SKPaints.PaintExfilOpen : (exfil.Status == ExfilStatus.Pending ? SKPaints.PaintExfilPending : SKPaints.PaintExfilClosed);
+                
+                var exfilPos = exfil.Position;
+                float dist = Vector3.Distance(sourcePlayer.Position, exfilPos);
+                Vector2 pos;
+                if (!w2s(view_matrix, new Vector3(exfilPos.X, exfilPos.Z, exfilPos.Y), out pos))
+                {
+                    continue;
+                }
+                else
+                {
+                    canvas.DrawText($"{exfil.name} : {(int)dist}", pos.X, pos.Y, paint);
+                }
             }
         }
 

@@ -775,7 +775,7 @@ namespace eft_dma_radar
                 {
                     var ProceduralWeaponAnimation = Memory.ReadPtrChain(Base,  new uint[] { Offsets.Player.ProceduralWeaponAnimation, 0x10, 0x28 });
                     Memory.Write(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Mask, BitConverter.GetBytes(1)); // mask
-                    Memory.Write(ProceduralWeaponAnimation + 0x1b8, BitConverter.GetBytes(10f)); // mask
+                    Memory.Write(ProceduralWeaponAnimation + 0x1b8, BitConverter.GetBytes(10f)); // fast aim
                     // breath
                     var breath = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Breath); // +0x28 (breath)
                     Memory.Write(breath + Offsets.Breath.Intensity, BitConverter.GetBytes(.0f)); // +0x0A4(intensity: float
@@ -973,7 +973,7 @@ namespace eft_dma_radar
                     {
                         try
                         {
-                            if (p.Type == PlayerType.LocalPlayer)
+                            if (p.Type == PlayerType.LocalPlayer || !p.IsActive || !p.IsAlive)
                                 continue;
                             var pPos = p._transform.GetPosition();
                             //(pPos.Y, pPos.Z) = (pPos.Z, pPos.Y);

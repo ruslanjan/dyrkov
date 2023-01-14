@@ -62,6 +62,8 @@ namespace eft_dma_radar
             this.MaxStamina = new System.Windows.Forms.CheckBox();
             this.ThermalVision = new System.Windows.Forms.CheckBox();
             this.groupBox_Loot = new System.Windows.Forms.GroupBox();
+            this.textBox_lootImportantPerSlot = new System.Windows.Forms.TextBox();
+            this.ImportPerSlot = new System.Windows.Forms.Label();
             this.button_RefreshLoot = new System.Windows.Forms.Button();
             this.button_LootApply = new System.Windows.Forms.Button();
             this.label9 = new System.Windows.Forms.Label();
@@ -435,6 +437,8 @@ namespace eft_dma_radar
             // 
             // groupBox_Loot
             // 
+            this.groupBox_Loot.Controls.Add(this.textBox_lootImportantPerSlot);
+            this.groupBox_Loot.Controls.Add(this.ImportPerSlot);
             this.groupBox_Loot.Controls.Add(this.button_RefreshLoot);
             this.groupBox_Loot.Controls.Add(this.button_LootApply);
             this.groupBox_Loot.Controls.Add(this.label9);
@@ -446,16 +450,35 @@ namespace eft_dma_radar
             this.groupBox_Loot.Controls.Add(this.label6);
             this.groupBox_Loot.Location = new System.Drawing.Point(8, 6);
             this.groupBox_Loot.Name = "groupBox_Loot";
-            this.groupBox_Loot.Size = new System.Drawing.Size(256, 202);
+            this.groupBox_Loot.Size = new System.Drawing.Size(318, 202);
             this.groupBox_Loot.TabIndex = 12;
             this.groupBox_Loot.TabStop = false;
             this.groupBox_Loot.Text = "Loot";
             this.groupBox_Loot.Visible = false;
             this.groupBox_Loot.Enter += new System.EventHandler(this.groupBox_Loot_Enter_2);
             // 
+            // textBox_lootImportantPerSlot
+            // 
+            this.textBox_lootImportantPerSlot.Location = new System.Drawing.Point(165, 52);
+            this.textBox_lootImportantPerSlot.Name = "textBox_lootImportantPerSlot";
+            this.textBox_lootImportantPerSlot.Size = new System.Drawing.Size(68, 23);
+            this.textBox_lootImportantPerSlot.TabIndex = 23;
+            this.textBox_lootImportantPerSlot.Text = "40000";
+            this.textBox_lootImportantPerSlot.TextChanged += new System.EventHandler(this.textBox_lootImportantPerSlot_TextChanged);
+            this.textBox_lootImportantPerSlot.KeyDown += new System.Windows.Forms.KeyEventHandler(this.textBox_lootImportantPerSlot_KeyDown);
+            // 
+            // ImportPerSlot
+            // 
+            this.ImportPerSlot.AutoSize = true;
+            this.ImportPerSlot.Location = new System.Drawing.Point(165, 34);
+            this.ImportPerSlot.Name = "ImportPerSlot";
+            this.ImportPerSlot.Size = new System.Drawing.Size(80, 15);
+            this.ImportPerSlot.TabIndex = 22;
+            this.ImportPerSlot.Text = "ImportPerSlot";
+            // 
             // button_RefreshLoot
             // 
-            this.button_RefreshLoot.Location = new System.Drawing.Point(178, 34);
+            this.button_RefreshLoot.Location = new System.Drawing.Point(251, 38);
             this.button_RefreshLoot.Name = "button_RefreshLoot";
             this.button_RefreshLoot.Size = new System.Drawing.Size(55, 49);
             this.button_RefreshLoot.TabIndex = 21;
@@ -495,7 +518,7 @@ namespace eft_dma_radar
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(77, 34);
+            this.label8.Location = new System.Drawing.Point(86, 34);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(60, 15);
             this.label8.TabIndex = 4;
@@ -554,7 +577,7 @@ namespace eft_dma_radar
             this.groupBox_MapSetup.Controls.Add(this.label_Pos);
             this.groupBox_MapSetup.Location = new System.Drawing.Point(8, 6);
             this.groupBox_MapSetup.Name = "groupBox_MapSetup";
-            this.groupBox_MapSetup.Size = new System.Drawing.Size(327, 175);
+            this.groupBox_MapSetup.Size = new System.Drawing.Size(346, 175);
             this.groupBox_MapSetup.TabIndex = 11;
             this.groupBox_MapSetup.TabStop = false;
             this.groupBox_MapSetup.Text = "Map Setup";
@@ -762,6 +785,8 @@ namespace eft_dma_radar
         private CheckBox NoRecoil;
         private CheckBox MaxStamina;
         private CheckBox ThermalVision;
+        private TextBox textBox_lootImportantPerSlot;
+        private Label ImportPerSlot;
     }
 }
 

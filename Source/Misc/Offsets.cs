@@ -102,6 +102,12 @@ namespace Offsets
     public struct Exfil
     {
         public const uint Status = 0xA8; // int32
+        public const uint ExfilTriggerSettings = 0x58; 
+    }
+
+    public struct ExfilTriggerSettings
+    {
+        public const uint Name = 0x10; // String
     }
     public struct Grenades // -.GClass05FD<Int32, Throwable>
     {
