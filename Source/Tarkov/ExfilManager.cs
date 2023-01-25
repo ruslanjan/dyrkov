@@ -17,7 +17,7 @@ namespace eft_dma_radar
         {
             var exfilController = Memory.ReadPtr(localGameWorld + Offsets.LocalGameWorld.ExfilController);
             var exfilPoints = Memory.ReadPtr(exfilController + Offsets.ExfilController.ExfilList);
-            var count = Memory.ReadValue<int>(exfilPoints + Offsets.ExfilController.ExfilCount);
+            var count = Memory.ReadValue<int>(exfilPoints + Offsets.UnityList.Count);
             if (count < 1 || count > 24) throw new ArgumentOutOfRangeException();
             var list = new List<Exfil>();
             for (uint i = 0; i < count; i++)
@@ -26,6 +26,24 @@ namespace eft_dma_radar
                 var exfil = new Exfil(exfilAddr);
                 list.Add(exfil);
             }
+            try
+            {
+                if (false)
+                {
+                    var scavExfilPoints = Memory.ReadPtr(exfilController + Offsets.ExfilController.ScavExfilList);
+                    var scavCount = Memory.ReadValue<int>(scavExfilPoints + Offsets.UnityList.Count);
+                    if (scavCount < 1 || scavCount > 24) throw new ArgumentOutOfRangeException();
+                    for (uint i = 0; i < scavCount; i++)
+                    {
+                        var exfilAddr = Memory.ReadPtr(scavExfilPoints + Offsets.UnityListBase.Start + (i * 0x08));
+                        var exfil = new Exfil(exfilAddr, true);
+                        list.Add(exfil);
+                    }
+                }
+            } catch {
+                Program.Log("Failed to load scav exfils");
+            }
+            
             Exfils = new(list); // update readonly ref
             UpdateExfils(); // Get initial statuses
             _sw.Start();
@@ -75,15 +93,18 @@ namespace eft_dma_radar
         public ulong BaseAddr { get; }
         public Vector3 Position { get; }
         public String name { get; }
+
+        public bool isScav { get; }
         public ExfilStatus Status { get; private set; } = ExfilStatus.Closed;
 
-        public Exfil(ulong baseAddr)
+        public Exfil(ulong baseAddr, bool isScav = false)
         {
             this.BaseAddr = baseAddr;
             var transform_internal = Memory.ReadPtrChain(baseAddr, Offsets.GameObject.To_TransformInternal);
             Position = new Transform(transform_internal).GetPosition();
             var name_ptr = Memory.ReadPtr(Memory.ReadPtr(baseAddr + Offsets.Exfil.ExfilTriggerSettings) + Offsets.ExfilTriggerSettings.Name);
             name = Memory.ReadUnityString(name_ptr);
+            this.isScav = isScav;
         }
 
         /// <summary>

@@ -875,6 +875,8 @@ namespace eft_dma_radar
 
         public void disableInertia()
         {
+            Program.Log($"Inertia init {Memory.Game.MainApplication.ToString("X")}");
+
             var _config = Memory.ReadPtrChain(Memory.Game.MainApplication, Offsets.MainApp.ToConfig);
             var inertia = Memory.ReadPtr(_config + Offsets.Config.Inertia);
             if (inertia != 0)

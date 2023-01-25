@@ -39,6 +39,7 @@
 628b9784bcf6e2659e09b8a2 ## S&S Precision PlateFrame plate carrier (Goons Edition)
 60a3c68c37ea821725773ef5 ## CQC Osprey MK4A plate carrier (Protection, MTP)
 628d0618d1ba6e4fa07ce5a4 ## NPP KlASS Bagariy armored rig	
+5c0e746986f7741453628fe5 ## WARTECH TV-110 plate carrier rig
 
 5df8a42886f77412640e2e75 ## Velocity Systems MPPV Multi-Purpose Patrol Vest	
 
@@ -63,8 +64,8 @@
 
 
 ## cigarettes
-573476f124597737e04bf328
-5734770f24597738025ee254
+## 573476f124597737e04bf328
+## 5734770f24597738025ee254
 
 ## ammo
 5737292724597765e5728562 ## 5.45x39mm BP gs ammo pack (120 pcs)

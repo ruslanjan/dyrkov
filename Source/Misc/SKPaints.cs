@@ -329,6 +329,38 @@ namespace eft_dma_radar
         };
         #endregion
         #region Kek
+        public static readonly SKPaint ScavPaintExfilBox = new SKPaint()
+        {
+            Color = new SKColor(0xcccccc00),
+            StrokeWidth = 1,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintExfilOpenBox = new SKPaint()
+        {
+            Color = SKColors.LimeGreen,
+            StrokeWidth = 1,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintExfilPendingBox = new SKPaint()
+        {
+            Color = SKColors.Yellow,
+            StrokeWidth = 1,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintExfilClosedBox = new SKPaint()
+        {
+            Color = SKColors.Red,
+            StrokeWidth = 1,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High,
+        };
         public static readonly SKPaint Crosshair = new SKPaint()
         {
             Color = SKColors.Red,

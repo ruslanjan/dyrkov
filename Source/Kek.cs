@@ -574,9 +574,11 @@ namespace eft_dma_radar.Source
         public void DrawExfils(SKCanvas canvas, Matrix4x4 view_matrix, Player sourcePlayer)
         {
             var exfils = Memory.Game.Exfils;
-            foreach (var exfil in exfils)
+            foreach (var exfil in exfils.Reverse())
             {
-                SKPaint paint = exfil.Status == ExfilStatus.Open ? SKPaints.PaintExfilOpen : (exfil.Status == ExfilStatus.Pending ? SKPaints.PaintExfilPending : SKPaints.PaintExfilClosed);
+                SKPaint paint = exfil.Status == ExfilStatus.Open ? SKPaints.PaintExfilOpenBox : (exfil.Status == ExfilStatus.Pending ? SKPaints.PaintExfilPendingBox : SKPaints.PaintExfilClosedBox);
+                if (exfil.isScav)
+                    paint = SKPaints.ScavPaintExfilBox;
                 
                 var exfilPos = exfil.Position;
                 float dist = Vector3.Distance(sourcePlayer.Position, exfilPos);
@@ -587,7 +589,7 @@ namespace eft_dma_radar.Source
                 }
                 else
                 {
-                    canvas.DrawText($"{exfil.name} : {(int)dist}", pos.X, pos.Y, paint);
+                    canvas.DrawText($"{(exfil.isScav ? "ScavEx " : "")}{exfil.name} : {(int)dist}", pos.X, pos.Y, paint);
                 }
             }
         }

@@ -96,8 +96,8 @@ namespace Offsets
     }
     public struct ExfilController // -.GClass0B67
     {
-        public const uint ExfilCount = 0x18; // int32
         public const uint ExfilList = 0x20; // to UnityListBase
+        public const uint ScavExfilList = 0x28; // to UnityListBase
     }
     public struct Exfil
     {
