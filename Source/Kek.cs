@@ -170,24 +170,6 @@ namespace eft_dma_radar.Source
             tmr.Tick += TmrTick;  // set handler
                                   //tmr.Start();
 
-            new Thread(() =>
-            {
-                while (true)
-                {
-                    if (InGame && LocalPlayer is not null)
-                    {
-
-                        LocalPlayer.NoRecoil();
-                        LocalPlayer.Kekbot();
-                    }
-                    Thread.Sleep(15);
-                }
-            })
-            {
-                IsBackground = true,
-                //Priority = ThreadPriority.AboveNormal
-            }.Start();
-
 
 
             Timer ftmr = new Timer();
@@ -400,7 +382,10 @@ namespace eft_dma_radar.Source
                                 {
                                     try
                                     {
-                                        if (player.Type == PlayerType.LocalPlayer) continue; // don't draw self
+                                        if (player.Type == PlayerType.LocalPlayer)
+                                        {
+                                           continue; // don't draw self
+                                        }
                                         this.DrawPlayerKek(canvas, player, view_matrix, sourcePlayer);
                                     }
                                     catch { }
@@ -577,8 +562,6 @@ namespace eft_dma_radar.Source
             foreach (var exfil in exfils.Reverse())
             {
                 SKPaint paint = exfil.Status == ExfilStatus.Open ? SKPaints.PaintExfilOpenBox : (exfil.Status == ExfilStatus.Pending ? SKPaints.PaintExfilPendingBox : SKPaints.PaintExfilClosedBox);
-                if (exfil.isScav)
-                    paint = SKPaints.ScavPaintExfilBox;
                 
                 var exfilPos = exfil.Position;
                 float dist = Vector3.Distance(sourcePlayer.Position, exfilPos);
@@ -589,6 +572,9 @@ namespace eft_dma_radar.Source
                 }
                 else
                 {
+                    if (exfil.isScav && exfil.Status != ExfilStatus.Open) {
+                        continue;
+                    }
                     canvas.DrawText($"{(exfil.isScav ? "ScavEx " : "")}{exfil.name} : {(int)dist}", pos.X, pos.Y, paint);
                 }
             }

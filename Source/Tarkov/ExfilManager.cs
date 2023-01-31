@@ -28,17 +28,14 @@ namespace eft_dma_radar
             }
             try
             {
-                if (false)
+                var scavExfilPoints = Memory.ReadPtr(exfilController + Offsets.ExfilController.ScavExfilList);
+                var scavCount = Memory.ReadValue<int>(scavExfilPoints + Offsets.UnityList.Count);
+                if (scavCount < 1 || scavCount > 24) throw new ArgumentOutOfRangeException();
+                for (uint i = 0; i < scavCount; i++)
                 {
-                    var scavExfilPoints = Memory.ReadPtr(exfilController + Offsets.ExfilController.ScavExfilList);
-                    var scavCount = Memory.ReadValue<int>(scavExfilPoints + Offsets.UnityList.Count);
-                    if (scavCount < 1 || scavCount > 24) throw new ArgumentOutOfRangeException();
-                    for (uint i = 0; i < scavCount; i++)
-                    {
-                        var exfilAddr = Memory.ReadPtr(scavExfilPoints + Offsets.UnityListBase.Start + (i * 0x08));
-                        var exfil = new Exfil(exfilAddr, true);
-                        list.Add(exfil);
-                    }
+                    var exfilAddr = Memory.ReadPtr(scavExfilPoints + Offsets.UnityListBase.Start + (i * 0x08));
+                    var exfil = new Exfil(exfilAddr, true);
+                    list.Add(exfil);
                 }
             } catch {
                 Program.Log("Failed to load scav exfils");

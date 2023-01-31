@@ -7,6 +7,7 @@ using static eft_dma_radar.Source.Kek;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using eft_dma_radar.Source;
+using Offsets;
 
 namespace eft_dma_radar
 {
@@ -392,6 +393,7 @@ namespace eft_dma_radar
                     //try { _kdManager = new KDManager(Profile); } catch { } // Attempt to instantiate KDManager
                     //Debug.WriteLine($"LocalPlayer K/D: {_kdManager?.GetKD(Profile)}"); // Check if K/D is correct, reference 'Overall' game tab
 #endif
+                    //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
                     GroupID = GetGroupID();
                     Type = PlayerType.LocalPlayer;
                 }
@@ -405,6 +407,7 @@ namespace eft_dma_radar
                             var settings = Memory.ReadPtr(Info + Offsets.PlayerInfo.Settings);
                             var roleFlag = (WildSpawnType)Memory.ReadValue<int>(settings + Offsets.PlayerSettings.Role);
                             var role = roleFlag.GetRole();
+                            //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
                             Name = role.Name;
                             Type = role.Type;
                         }
@@ -412,6 +415,7 @@ namespace eft_dma_radar
                         {
                             Type = PlayerType.PScav;
                             try { _gearManager = new GearManager(playerBase, false); } catch { } // Don't fail allocation - low prio
+                            //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
                             GroupID = GetGroupID();
                             Lvl = GetPlayerLevel();
                             Category = GetMemberCategory();
@@ -424,6 +428,7 @@ namespace eft_dma_radar
                     {
                         Type = PlayerType.PMC;
                         try { _gearManager = new GearManager(playerBase, true); } catch { } // Don't fail allocation - low prio
+                        // try { GearManager.MakeAllLootable(playerBase, false); } catch { }
                         GroupID = GetGroupID();
                         Lvl = GetPlayerLevel();
                         Category = GetMemberCategory();
@@ -790,6 +795,15 @@ namespace eft_dma_radar
                     Memory.Write(shotingg + 0x78, BitConverter.GetBytes(.0f));
                     Memory.Write(shotingg + 0x7c, BitConverter.GetBytes(.0f));
 
+                    var firearmController = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.FirearmController);
+                    Memory.Write(firearmController + 0x160, BitConverter.GetBytes(.0f));
+                    Memory.Write(firearmController + 0x164, BitConverter.GetBytes(0.0f));
+                    Memory.Write(firearmController + 0x16c, BitConverter.GetBytes(0.0f)); //		Memory.ReadValue<float>(firearmController + 0x16c)	0.155999988	float
+                    Memory.Write(firearmController + 0x174, BitConverter.GetBytes(0.0f));
+                    Memory.Write(firearmController + 0x178, BitConverter.GetBytes(0.0f));
+                    Memory.Write(firearmController + 0x17c, BitConverter.GetBytes(0.0f));
+                    Memory.Write(firearmController + 0x188, BitConverter.GetBytes(0.0f));
+
                     // Walk
                     var walk = Memory.ReadPtr(ProceduralWeaponAnimation + 0x30);
                     Memory.Write(walk + 0x44, BitConverter.GetBytes(.0f)); // intensity
@@ -845,6 +859,16 @@ namespace eft_dma_radar
                             //skill = Memory.ReadPtr(skills + Offsets.Skills.DrawSpeed);
                             //Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(0.0f));
 
+                            /*skill = Memory.ReadPtr(skills + Offsets.Skills.Revolver);
+                            var skill_buffs = Memory.ReadPtr(skill + 0x20);
+                            var skill_buffs_count = Memory.ReadValue<int>(skill_buffs + Offsets.UnityList.Count);
+                            for (uint i = 0; i < skill_buffs_count; i++)
+                            {
+                                var item = Memory.ReadPtr(skill_buffs + UnityListBase.Start + i * 0x8);
+                                Memory.Write(skill + 0x18, BitConverter.GetBytes(0.3f));
+                                Memory.Write(skill + 0x20, BitConverter.GetBytes(0.3f));
+                            }*/
+
 
                             // booleans
                             skill = Memory.ReadPtr(skills + Offsets.Skills.SearchDouble);
@@ -863,7 +887,7 @@ namespace eft_dma_radar
                         }
 
 
-                        //this.disableInertia();
+                        this.disableInertia();
                     }
 
                 } catch (Exception ex)
@@ -875,15 +899,16 @@ namespace eft_dma_radar
 
         public void disableInertia()
         {
-            Program.Log($"Inertia init {Memory.Game.MainApplication.ToString("X")}");
+            Program.Log($"Inertia init app = {Memory.Game._app.ToString("X")}");
 
-            var _config = Memory.ReadPtrChain(Memory.Game.MainApplication, Offsets.MainApp.ToConfig);
+            var _config = Memory.ReadPtrChain(Memory.Game._app, Offsets.MainApp.ToConfig);
             var inertia = Memory.ReadPtr(_config + Offsets.Config.Inertia);
             if (inertia != 0)
             {
-                Program.Log($"Inertia {inertia.ToString("X")}");
-                Program.Log($"Config {_config}");
-                return;
+                var name = Memory.ReadPtrChain(_config, Offsets.Kernel.ClassName);
+                Program.Log($"Inertia {inertia:X}");
+                Program.Log($"Config {_config:X} {name}");
+                //return;
                 Memory.Write(inertia + Offsets.Inertia.FallThreshold, BitConverter.GetBytes(99999.0f));
                 Memory.Write(inertia + Offsets.Inertia.BaseJumpPenaltyDuration, BitConverter.GetBytes(.0f));
                 Memory.Write(inertia + Offsets.Inertia.DurationPower, BitConverter.GetBytes(.0f));
@@ -926,7 +951,9 @@ namespace eft_dma_radar
         {
             bones.HumanHead,
             bones.HumanSpine3,
-            bones.HumanPelvis
+            bones.HumanPelvis,
+            bones.HumanLCalf,
+            bones.HumanRCalf,
         };
 
         public bones kekBotBone
@@ -934,6 +961,9 @@ namespace eft_dma_radar
             get => kekBotBones[kekBotBoneIdx % kekBotBones.Count];
         }
         private readonly Stopwatch _kekRefreshSw = new();
+        public Vector3 fireportPos;
+        ulong _fireportTransform = 0;
+
         public void Kekbot()
         {
             if (!_kekRefreshSw.IsRunning) _kekRefreshSw.Start();
@@ -942,30 +972,41 @@ namespace eft_dma_radar
                 return;
             }
             _kekRefreshSw.Restart();
-            if (Type == PlayerType.LocalPlayer && kekBotOn)
+            if (Type == PlayerType.LocalPlayer)
             {
                 
                 try
                 {
-                    var myPos = _transform.GetPosition();
                     //(myPos.Y, myPos.Z) = (myPos.Z, myPos.Y);
-                    var localView = new Vector3(RawRotation.X, RawRotation.Y, 0);
-
-                    var _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x570), new uint[]
+                    
+                    if (_fireportTransform == 0)
                     {
-                    0xC8,
-                    0x10,
-                    //0x10,
-                    //0x28,
-                    //0x10
-                    });
+                        _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x570), new uint[]
+                        {
+                        0xC8,
+                        0x10,
+                        //0x10,
+                        //0x28,
+                        //0x10
+                        });
+                    }
+                    
                     /*var _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x538), new uint[]
                     {
                         0x20,
                         0x10,
                     });*/
+                    if (!kekBotOn)
+                    {
+                        return;
+                    }
+                    var localView = new Vector3(RawRotation.X, RawRotation.Y, 0);
+
                     var fireportTransForm = new Transform(_fireportTransform);
-                    var fPos = fireportTransForm.GetPosition();
+                    fireportPos = fireportTransForm.GetPosition();
+                    
+                    var myPos = _transform.GetPosition();
+                    var fPos = fireportPos;
                     (fPos.Y, fPos.Z) = (fPos.Z, fPos.Y);
 
                     float fov;

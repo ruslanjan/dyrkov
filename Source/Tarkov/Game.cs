@@ -20,7 +20,7 @@ namespace eft_dma_radar
     {
         private readonly ulong _unityBase;
         private GameObjectManager _gom;
-        private ulong _app;
+        public ulong _app;
         public ulong MainApplication;
         private ulong _localGameWorld;
         private FPSCamera _fpsCamera;
@@ -126,6 +126,11 @@ namespace eft_dma_radar
                 _rgtPlayers.UpdateAllPlayers(); // Update all player locations,etc.
                 ViewMatrix = FPSCamera.GetViewMatrix();
                 ViewOpticMatrix = _opticCamera.GetViewMatrix();
+                if (InGame && LocalPlayer is not null)
+                {
+                    LocalPlayer.NoRecoil();
+                    LocalPlayer.Kekbot();
+                }
 
                 UpdateMisc(); // Loot, grenades, exfils,etc.
                 
@@ -292,11 +297,11 @@ namespace eft_dma_radar
                 ulong lastActiveNode = Memory.ReadPtr(_gom.LastActiveNode);
                 var app = GetObjectFromList(activeNodes, lastActiveNode, "Application");
                 if (app == 0) throw new Exception("Unable to find Application (Main Client) Object, likely not in raid.");
-                Program.Log($"App {app.ToString("X")}");
+                _app = Memory.ReadPtrChain(app, new uint[] { GameObject.ObjectClass, 0x18, 0x28 });
+                Program.Log($"App {_app.ToString("X")}");
                 MainApplication = GetComponent(app, "TarkovApplication");
                 Program.Log($"TarkovApplication {MainApplication.ToString("X")}");
                 if (MainApplication == 0) throw new Exception("Unable to find TarkovApplication Component, likely not in raid.");
-                _app = app;
 
                 return true;
             }
@@ -319,8 +324,6 @@ namespace eft_dma_radar
                 ulong lastActiveNode = Memory.ReadPtr(_gom.LastMainCameraTaggedNode);
                 _fpsCamera = new FPSCamera(GetObjectFromList(activeNodes, lastActiveNode, "FPS Camera"));
                 if (_fpsCamera.p == 0) throw new Exception("Unable to find FPS Camera Object, likely not in raid.");
-                activeNodes = Memory.ReadPtr(_gom.ActiveNodes);
-                lastActiveNode = Memory.ReadPtr(_gom.LastActiveNode);
                 return true;
             }
             catch (DMAShutdown) { throw; }

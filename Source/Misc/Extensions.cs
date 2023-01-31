@@ -413,11 +413,17 @@ namespace eft_dma_radar
                         Name = "BirdEye",
                         Type = PlayerType.AIRaider
                     };
-                case WildSpawnType.zryachiy:
+                case WildSpawnType.bossZryachiy:
                     return new AIRole()
                     {
                         Name = "Zryachiy",
                         Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.followerZryachiy:
+                    return new AIRole()
+                    {
+                        Name = "followerZryachiy",
+                        Type = PlayerType.AIRaider
                     };
 
                 default:

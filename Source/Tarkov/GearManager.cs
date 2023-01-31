@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Offsets;
+using System;
 using System.Collections.ObjectModel;
 
 namespace eft_dma_radar
@@ -14,6 +15,52 @@ namespace eft_dma_radar
         /// </summary>
         public ReadOnlyDictionary<string, GearItem> Gear { get; }
 
+        public static void MakeAllLootable(ulong playerBase, bool isPMC)
+        {
+            var inventorycontroller = Memory.ReadPtr(playerBase + Offsets.Player.InventoryController);
+            var inventory = Memory.ReadPtr(inventorycontroller + Offsets.InventoryController.Inventory);
+            var equipment = Memory.ReadPtr(inventory + Offsets.Inventory.Equipment);
+            var slots = Memory.ReadPtr(equipment + Offsets.Equipment.Slots);
+            var size = Memory.ReadValue<int>(slots + Offsets.UnityList.Count);
+            
+            for (int slotID = 0; slotID < size; slotID++)
+            {
+                try
+                {
+                    var slotPtr = Memory.ReadPtr(slots + Offsets.UnityListBase.Start + (uint)slotID * 0x8);
+                    var namePtr = Memory.ReadPtr(slotPtr + Offsets.Slot.Name);
+                    var name = Memory.ReadUnityString(namePtr);
+                    var containedItem = Memory.ReadPtr(slotPtr + Offsets.Slot.ContainedItem);
+                    if (containedItem == 0)
+                        continue;
+                    var inventorytemplate = Memory.ReadPtr(containedItem + Offsets.LootItemBase.ItemTemplate);
+                    if (inventorytemplate == 0)
+                        continue;
+                    Memory.Write(inventorytemplate + Offsets.ItemTemplate.NotShownInSlot, new byte[] { 0x0 });
+                    Memory.Write(inventorytemplate + 0x108, BitConverter.GetBytes(0));
+                    Memory.Write(inventorytemplate + 0x105, new byte[] { 0x0 });
+                    Memory.Write(inventorytemplate + 0x104, new byte[] { 0x0 });
+                    Memory.Write(inventorytemplate + 0x106, new byte[] { 0x0 });
+                    if (name == "Dogtag")
+                    {
+                        Memory.Write(inventorytemplate + 0x118, new byte[] { 0x0 });
+                    }
+                    if (name == "Pockets")
+                    {
+                        Memory.Write(inventorytemplate + 0xA4, BitConverter.GetBytes(1));
+                        Memory.Write(inventorytemplate + 0xA8, BitConverter.GetBytes(1));
+                        var CantRemoveFromSlotsDuringRaid = Memory.ReadPtr(inventorytemplate + 0x120);
+                        //Memory.ReadValue<int>(CantRemoveFromSlotsDuringRaid + Offsets.UnityList.Count);
+                        Memory.Write(CantRemoveFromSlotsDuringRaid + Offsets.UnityList.Count, new byte[] { 0x0 });
+                        //Memory.Write(CantRemoveFromSlotsDuringRaid + Offsets.UnityListBase.Start + (uint)slotID * 0x8, 0);
+                    }
+                    // Memory.ReadPtr(0x00000299fb9d5660 + Offsets.UnityListBase.Start + (uint)slotID * 0x8);
+
+                }
+                catch (Exception ex) { }
+            }
+        }
+
         public GearManager(ulong playerBase, bool isPMC)
         {
             var inventorycontroller = Memory.ReadPtr(playerBase + Offsets.Player.InventoryController);
@@ -25,11 +72,18 @@ namespace eft_dma_radar
 
             for (int slotID = 0; slotID < size; slotID++)
             {
-                var slotPtr = Memory.ReadPtr(slots + Offsets.UnityListBase.Start + (uint)slotID * 0x8);
-                var namePtr = Memory.ReadPtr(slotPtr + Offsets.Slot.Name);
-                var name = Memory.ReadUnityString(namePtr);
-                if (_skipSlots.Contains(name, StringComparer.OrdinalIgnoreCase)) continue;
-                slotDict.TryAdd(name, slotPtr);
+                try
+                {
+                    var slotPtr = Memory.ReadPtr(slots + Offsets.UnityListBase.Start + (uint)slotID * 0x8);
+                    var namePtr = Memory.ReadPtr(slotPtr + Offsets.Slot.Name);
+                    var name = Memory.ReadUnityString(namePtr);
+                    if (_skipSlots.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    {
+                        slotDict.TryAdd(name, slotPtr);
+                    }
+                } catch(Exception ex) { }
+                
+                
             }
             var gearDict = new Dictionary<string, GearItem>(StringComparer.OrdinalIgnoreCase);
             foreach (var slotName in slotDict.Keys)

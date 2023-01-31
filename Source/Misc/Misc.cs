@@ -962,7 +962,9 @@ namespace eft_dma_radar
         /// </summary>
         followerBirdEye = 268435456,
 
-        zryachiy = 0x20000000
+        bossZryachiy = 536870912,
+
+        followerZryachiy = 1073741824
     };
 
     [Flags]

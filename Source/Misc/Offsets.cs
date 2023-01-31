@@ -42,11 +42,12 @@ namespace Offsets
     public struct MainApp
     {
         // MainApplication(Parent ClientApplication) -> _backEnd -> \uE00B (class214_0) -> BackEndConfig -> Config -> Inertia.
-        public static readonly uint[] ToConfig = new uint[] { 
-            0x28, /* _backEnd */  // class213
+        public static readonly uint[] ToConfig = new uint[] {
+            0x28, 0x48, 0xA8, 0x10
+            /* 0x28, // _backEnd // class213
             0x48, // class214_0 0x58
             0x138,//0x110, // BackendConfigClass \uE510
-            0x10 // Config GClass1173 \uE553
+            0x10 // Config GClass1173 \uE553 */
         };
     }
 
@@ -143,6 +144,7 @@ namespace Offsets
         public const uint Breath = 0x28;
         public const uint Shooting = 0x48;
         public const uint Mask = 0x118;
+        public const uint FirearmController = 0x98;
     }
     public struct Breath
     {
@@ -197,6 +199,9 @@ namespace Offsets
         //public const uint SearchBuffSpeed = 0x480;
         //public const uint SurgerySpeed = 0x498;
 
+        // Weapons
+        public const uint Revolver = 0x250;
+
         // bools
         public const uint SearchDouble = 0x4C0;
         public const uint MagDrillsInstantCheck = 0x1A0;
@@ -205,6 +210,11 @@ namespace Offsets
         public const uint IntellectEliteAmmoCounter = 0x148;
 
         public const uint Value = 0x30; // float or boolean
+    }
+
+    public struct WeaponSkill
+    {
+        public const uint Value = 0x2C;
     }
     public struct PlayerInfo // -.GClass1118
     {
@@ -317,6 +327,7 @@ namespace Offsets
     {
         public const uint BsgId = 0x50; // string,unity     [50] _id : String
         public const uint IsQuestItem = 0x9C; // bool       [9C] QuestItem : Boolean
+        public const uint NotShownInSlot = 0xD8;
     }
     public struct LootBaseObject
     {
