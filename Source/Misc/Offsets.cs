@@ -128,7 +128,8 @@ namespace Offsets
         {
             0xA8, 0x28, 0x28, Offsets.UnityList.Base
         };
-        
+        public const uint PlayerBody = 0xA8;
+
         public const uint MovementContext = 0x40; // to MovementContext
         public const uint Corpse = 0x350; // EFT.Interactive.Corpse
         public const uint Profile = 0x520; // to Profile
@@ -137,6 +138,25 @@ namespace Offsets
         public const uint Physical = 0x530;
         public const uint ProceduralWeaponAnimation = 0x1A0;
         public const uint IsLocalPlayer = 0x837; // bool
+    }
+
+    public struct PlayerBody
+    {
+        public const uint SlotViews = 0x50;
+    }
+
+    public struct SlotViews
+    {
+        public const uint Dresses = 0x40;
+    }
+    public struct Dress
+    {
+        public const uint Renderers = 0x28;
+    }
+
+    public struct Renderer
+    {
+        public const uint Materials = 0x10;
     }
 
     public struct ProceduralWeaponAnimation

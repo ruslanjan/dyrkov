@@ -8,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using eft_dma_radar.Source;
 using Offsets;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
 
 namespace eft_dma_radar
 {
@@ -341,6 +342,133 @@ namespace eft_dma_radar
             HumanNeck = 132,
             HumanHead = 133
         };
+
+        public void updateMisc()
+        {
+            if (Type != PlayerType.LocalPlayer)
+            {
+                //ClothingChams();
+                //GearChams();
+            }
+        }
+
+
+        private void GearChams()
+        {
+            try
+            {
+                var Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
+                var slotViews = Memory.ReadPtr(Body + Offsets.PlayerBody.SlotViews);
+                var slotViewsList = Memory.ReadPtr(slotViews + 0x18);
+                var iList = Memory.ReadPtr(slotViewsList + Offsets.UnityList.Base);
+                var iListSize = Memory.ReadValue<int>(slotViewsList + Offsets.UnityList.Count);
+                for (uint i = 0; i < iListSize; i++)
+                {
+                    var iEntry = Memory.ReadValue<ulong>(iList + 0x20 + (0x8 * i));
+                    if (iEntry == 0x0) continue;
+                    var dressesAddr = Memory.ReadValue<ulong>(iEntry + Offsets.SlotViews.Dresses); // 0x40
+                    if (dressesAddr == 0x0) continue;
+                    var dresses = new MemArray(dressesAddr);
+                    for (uint j = 0; j < dresses.Data.Length; j++)
+                    {
+                        var jEntry = dresses.Data[j];
+                        var renderersAddr = Memory.ReadValue<ulong>(jEntry + Offsets.Dress.Renderers); // 0x28
+                        if (renderersAddr == 0x0) continue;
+                        var renderers = new MemArray(renderersAddr);
+                        for (uint k = 0; k < renderers.Data.Length; k++)
+                        {
+                            var kEntry = renderers.Data[k];
+                            var materialsAddr = Memory.ReadValue<ulong>(kEntry + Offsets.Renderer.Materials); // 0x10
+                            if (materialsAddr == 0x0) continue;
+                            NullMaterials(materialsAddr);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ERROR applying Gear Chams for {Name}: {ex}");
+            }
+        }
+        private void ClothingChams()
+        {
+            try
+            {
+                var Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
+                var pSkinsDict = Memory.ReadPtr(Body + 0x38);
+                var SkinsCount = Memory.ReadValue<int>(pSkinsDict + 0x40);
+
+                if (SkinsCount <= 0 || SkinsCount > 10000)
+                    return;
+                var SkinEntries = Memory.ReadPtr(pSkinsDict + 0x18);
+
+                for (uint i = 0; i < SkinsCount; i++)
+                {
+                    var pBodySkins = Memory.ReadValue<ulong>(SkinEntries + 0x30 + (0x18 * i));
+                    if (pBodySkins == 0x0)
+                        continue;
+                    var pLodsArray = Memory.ReadValue<ulong>(pBodySkins + 0x18);
+                    var LodsCount = Memory.ReadValue<int>(pLodsArray + 0x18);
+
+                    if (LodsCount > 10000)
+                        continue;
+
+                    for (uint j = 0; j < LodsCount; j++)
+                    {
+                        var pLodEntry = Memory.ReadPtr(pLodsArray + 0x20 + (j * 0x8));
+                        if (pLodEntry == 0x0)
+                            continue;
+
+                        var SkinnedMeshRenderer = Memory.ReadValue<ulong>(pLodEntry + 0x20);
+                        if (SkinnedMeshRenderer == 0x0)
+                            continue;
+
+                        var pMaterialDictionary = Memory.ReadValue<ulong>(SkinnedMeshRenderer + 0x10);
+                        if (pMaterialDictionary == 0x0)
+                            continue;
+
+                        var MaterialCount = Memory.ReadValue<int>(pMaterialDictionary + 0x158);
+                        if (MaterialCount < 0) continue;
+                        if (MaterialCount > 10)
+                        {
+                            SkinnedMeshRenderer = Memory.ReadValue<ulong>(SkinnedMeshRenderer + 0x20);
+                            if (SkinnedMeshRenderer == 0x0)
+                                continue;
+                            pMaterialDictionary = Memory.ReadValue<ulong>(SkinnedMeshRenderer + 0x10);
+                            if (pMaterialDictionary == 0x0)
+                                continue;
+                        }
+                        NullMaterials(pMaterialDictionary);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"ERROR applying Clothing Chams for {Name}: {ex}");
+            }
+        }
+        private void NullMaterials(ulong materials)
+        {
+            var MaterialCount = Memory.ReadValue<int>(materials + 0x158);
+
+            if (MaterialCount > 0 && MaterialCount < 10)
+            {
+                var MaterialDictionaryBase = Memory.ReadValue<ulong>(materials + 0x148);
+
+                ulong nullValue = 0x0;
+                for (uint k = 0; k < MaterialCount; k++)
+                {
+                    try
+                    {
+                        ulong addr = MaterialDictionaryBase + (k * 0x50);
+                        if (Memory.ReadValue<ulong>(addr) != 0x0)
+                            Memory.Write(addr, BitConverter.GetBytes(nullValue)); // Can also log to a List<T> to reapply faster
+                    }
+                    catch { }
+                }
+            }
+        }
+
         public Player(ulong playerBase, ulong playerProfile, Vector3? pos = null)
         {
             try
@@ -796,13 +924,13 @@ namespace eft_dma_radar
                     Memory.Write(shotingg + 0x7c, BitConverter.GetBytes(.0f));
 
                     var firearmController = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.FirearmController);
-                    Memory.Write(firearmController + 0x160, BitConverter.GetBytes(.0f));
-                    Memory.Write(firearmController + 0x164, BitConverter.GetBytes(0.0f));
-                    Memory.Write(firearmController + 0x16c, BitConverter.GetBytes(0.0f)); //		Memory.ReadValue<float>(firearmController + 0x16c)	0.155999988	float
-                    Memory.Write(firearmController + 0x174, BitConverter.GetBytes(0.0f));
+                    //Memory.Write(firearmController + 0x160, BitConverter.GetBytes(.0f));
+                    //Memory.Write(firearmController + 0x164, BitConverter.GetBytes(0.0f));
+                    //Memory.Write(firearmController + 0x16c, BitConverter.GetBytes(0.0f)); //		Memory.ReadValue<float>(firearmController + 0x16c)	0.155999988	float
+                    //Memory.Write(firearmController + 0x174, BitConverter.GetBytes(0.0f));
                     Memory.Write(firearmController + 0x178, BitConverter.GetBytes(0.0f));
                     Memory.Write(firearmController + 0x17c, BitConverter.GetBytes(0.0f));
-                    Memory.Write(firearmController + 0x188, BitConverter.GetBytes(0.0f));
+                    //Memory.Write(firearmController + 0x188, BitConverter.GetBytes(0.0f));
 
                     // Walk
                     var walk = Memory.ReadPtr(ProceduralWeaponAnimation + 0x30);

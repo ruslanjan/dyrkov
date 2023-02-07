@@ -125,9 +125,9 @@ namespace eft_dma_radar
                 case PlayerType.AIScav:
                     return close ? SKPaints.PaintScavBox : SKPaints.PaintFarScavBox;
                 case PlayerType.AIRaider:
-                    return SKPaints.PaintRaider;
+                    return SKPaints.PaintRaiderBox;
                 case PlayerType.AIBoss:
-                    return SKPaints.PaintBoss;
+                    return SKPaints.PaintBossBox;
                 case PlayerType.PScav:
                     return close ? SKPaints.PaintPScavBox : SKPaints.PaintFarPScavBox;
                 case PlayerType.SpecialPlayer:
@@ -175,9 +175,9 @@ namespace eft_dma_radar
                 case PlayerType.AIScav:
                     return close ? SKPaints.TextScavBox : SKPaints.TextFarScavBox;
                 case PlayerType.AIRaider:
-                    return SKPaints.TextRaider;
+                    return SKPaints.TextRaiderBox;
                 case PlayerType.AIBoss:
-                    return SKPaints.TextBoss;
+                    return SKPaints.TextBossBox;
                 case PlayerType.PScav:
                     return close ? SKPaints.TextPScavBox : SKPaints.TextFarPScavBox;
                 case PlayerType.SpecialPlayer:

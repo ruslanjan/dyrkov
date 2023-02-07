@@ -119,6 +119,7 @@ namespace eft_dma_radar
                                 existingPlayer.IsActive = true;
                                 existingPlayer.IsAlive = true;
                             }
+                            existingPlayer.updateMisc();
                         }
                         else // Does not exist - allocate new player
                         {
@@ -328,6 +329,7 @@ namespace eft_dma_radar
                         //player.SetKD(); // set KD if not already set
                         if (p1 && p2 && p3) player.ErrorCount = 0;
                         else player.ErrorCount++;
+                        
                     }
                 }
                 if (_players.Where(x => x.Value.Type is PlayerType.LocalPlayer).Count() > 0)

@@ -510,6 +510,43 @@ namespace eft_dma_radar
             Typeface = SKTypeface.FromFamilyName("Arial"),
             FilterQuality = SKFilterQuality.High
         };
+
+        public static readonly SKPaint PaintRaiderBox = new SKPaint()
+        {
+            Color = SKColor.Parse("ffc70f"),
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint TextRaiderBox = new SKPaint()
+        {
+            Color = SKColor.Parse("ffc70f"),
+            IsStroke = false,
+            TextSize = 12,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold),
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint PaintBossBox = new SKPaint()
+        {
+            Color = SKColors.Fuchsia,
+            StrokeWidth = 0.3f,
+            Style = SKPaintStyle.Stroke,
+            IsAntialias = true,
+            FilterQuality = SKFilterQuality.High
+        };
+        public static readonly SKPaint TextBossBox = new SKPaint()
+        {
+            Color = SKColors.Fuchsia,
+            IsStroke = false,
+            TextSize = 12,
+            TextEncoding = SKTextEncoding.Utf8,
+            IsAntialias = true,
+            Typeface = SKTypeface.FromFamilyName("Arial", SKFontStyle.Bold),
+            FilterQuality = SKFilterQuality.High
+        };
         #endregion
     }
 }

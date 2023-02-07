@@ -706,7 +706,7 @@ namespace eft_dma_radar
             this.Controls.Add(this.tabControl1);
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "MainForm";
-            this.Text = "Dyrkov Pidar";
+            this.Text = "Dyrkov Pidar v0.12";
             this.Load += new System.EventHandler(this.MainForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.bindingSource1)).EndInit();
             this.tabPage4.ResumeLayout(false);
