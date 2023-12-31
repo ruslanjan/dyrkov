@@ -258,6 +258,9 @@ namespace eft_dma_radar
         /// PlayerInfo Address (GClass1044)
         /// </summary>
         public ulong Info { get; }
+
+        public bool IsObserved { get; }
+
         public ulong TransformInternal { get; }
         public Dictionary<bones, ulong> bonesTransforms = new(); // backing field
 
@@ -469,46 +472,66 @@ namespace eft_dma_radar
             }
         }
 
-        public Player(ulong playerBase, ulong playerProfile, Vector3? pos = null)
+        public Player(ulong playerBase, ulong playerProfile, Vector3? pos = null, bool isObserved = true)
         {
             try
             {
                 Base = playerBase;
                 Profile = playerProfile;
+                IsObserved = isObserved;
                 if (pos is not null)
                 {
                     this.Position = (Vector3)pos; // Populate provided Position (usually only for a re-alloc)
                 }
-                Info = Memory.ReadPtr(playerProfile + Offsets.Profile.PlayerInfo);
-                var healthEntriesList = Memory.ReadPtrChain(playerBase, 
-                    new uint[] { Offsets.Player.HealthController , 
-                        Offsets.HealthController.To_HealthEntries[0], 
-                        Offsets.HealthController.To_HealthEntries[1] });
-                HealthEntries = new ulong[7];
-                for (uint i = 0; i < 7; i++)
+                if (!isObserved)
                 {
-                    HealthEntries[i] = Memory.ReadPtrChain(healthEntriesList, new uint[] { 0x30 + (i * 0x18), Offsets.HealthEntry.Value });
+                    Info = Memory.ReadPtr(playerProfile + Offsets.Profile.PlayerInfo);
+                    var healthEntriesList = Memory.ReadPtrChain(playerBase, 
+                        new uint[] { Offsets.Player.HealthController , 
+                            Offsets.HealthController.To_HealthEntries[0], 
+                            Offsets.HealthController.To_HealthEntries[1] });
+                    HealthEntries = new ulong[7];
+                    for (uint i = 0; i < 7; i++)
+                    {
+                        HealthEntries[i] = Memory.ReadPtrChain(healthEntriesList, new uint[] { 0x30 + (i * 0x18), Offsets.HealthEntry.Value });
+                    }
+                    MovementContext = Memory.ReadPtr(playerBase + Offsets.Player.MovementContext);
                 }
-                MovementContext = Memory.ReadPtr(playerBase + Offsets.Player.MovementContext);
-                
-                
-                var bone_matrix = Memory.ReadPtrChain(Base, Offsets.Player.bone_matrix);
-                
+                ulong bone_matrix;
+                if (!isObserved)
+                    bone_matrix = Memory.ReadPtrChain(Base, Offsets.Player.bone_matrix);
+                else
+                    bone_matrix = Memory.ReadPtrChain(Base, Offsets.ObservedPlayerView.bone_matrix);
                 foreach (var b in TargetBones)
                 {
                     bonesTransforms[b] = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)b) * 0x8)) + 0x10);
                     _bonesTransforms[b] = new Transform(bonesTransforms[b]);
                 }
 
+                if (!isObserved)
+                {
 
-                TransformInternal = Memory.ReadPtrChain(playerBase, Offsets.Player.To_TransformInternal);
-                _transform = new Transform(TransformInternal, true);
+                    TransformInternal = Memory.ReadPtrChain(playerBase, Offsets.Player.To_TransformInternal);
+                    _transform = new Transform(TransformInternal, true);
+                } else
+                {
+                    TransformInternal = Memory.ReadPtrChain(playerBase, Offsets.ObservedPlayerView.To_TransformInternal);
+                    _transform = new Transform(TransformInternal, true);
+                }
                 
-                var isLocalPlayer = Memory.ReadValue<bool>(playerBase + Offsets.Player.IsLocalPlayer);
-                var playerSide = Memory.ReadValue<int>(Info + Offsets.PlayerInfo.PlayerSide); // Scav, PMC, etc.
-                IsPmc = playerSide == 0x1 || playerSide == 0x2;
-                isUsec = playerSide == 0x1;
-                isBear = playerSide == 0x2;
+                var isLocalPlayer = !isObserved && Memory.ReadValue<bool>(playerBase + Offsets.Player.IsLocalPlayer);
+                int playerSide;
+                if (!isObserved)
+                {
+                    playerSide = Memory.ReadValue<int>(Info + Offsets.PlayerInfo.PlayerSide); // Scav, PMC, etc.
+                    IsPmc = playerSide == 0x1 || playerSide == 0x2;
+                    isUsec = playerSide == 0x1;
+                    isBear = playerSide == 0x2;
+                } else
+                {
+                    playerSide = 0x1;
+                    IsPmc = true;
+                }
                 if (isLocalPlayer)
                 {
                     Program.Log($"LocalPlayer:0x{Base.ToString("X")}");
@@ -524,6 +547,7 @@ namespace eft_dma_radar
                     //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
                     GroupID = GetGroupID();
                     Type = PlayerType.LocalPlayer;
+                    
                 }
                 else
                 {
@@ -542,7 +566,7 @@ namespace eft_dma_radar
                         else // PLAYER SCAV
                         {
                             Type = PlayerType.PScav;
-                            try { _gearManager = new GearManager(playerBase, false); } catch { } // Don't fail allocation - low prio
+                            //try { _gearManager = new GearManager(playerBase, false); } catch { } // Don't fail allocation - low prio
                             //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
                             GroupID = GetGroupID();
                             Lvl = GetPlayerLevel();
@@ -555,14 +579,29 @@ namespace eft_dma_radar
                     else if (IsPmc) // 0x1 0x2 usec/bear
                     {
                         Type = PlayerType.PMC;
-                        try { _gearManager = new GearManager(playerBase, true); } catch { } // Don't fail allocation - low prio
+                        // try { _gearManager = new GearManager(playerBase, true); } catch { } // Don't fail allocation - low prio
                         // try { GearManager.MakeAllLootable(playerBase, false); } catch { }
-                        GroupID = GetGroupID();
-                        Lvl = GetPlayerLevel();
-                        Category = GetMemberCategory();
-                        var namePtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.Nickname);
-                        Name = Memory.ReadUnityString(namePtr);
-                        AccountID = GetAccountID();
+                        if (!isObserved)
+                        {
+                            GroupID = GetGroupID();
+                            var namePtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.Nickname);
+                            Name = Memory.ReadUnityString(namePtr);
+                            AccountID = GetAccountID();
+                        } else
+                        {
+                            var namePtr = Memory.ReadPtr(Base + Offsets.ObservedPlayerView.Nickname);
+                            Name = Memory.ReadUnityString(namePtr);
+                            AccountID = GetAccountID();
+                            for (int i = 0; i < Extensions.Friends.Length; ++i)
+                            {
+                                if (Name == Extensions.Friends[i])
+                                {
+                                    Type = PlayerType.Teammate;
+                                }
+                            }
+                        }
+                        //Lvl = GetPlayerLevel();
+                        //Category = GetMemberCategory();
 
                     }
                     else throw new ArgumentOutOfRangeException("playerSide");
@@ -775,8 +814,15 @@ namespace eft_dma_radar
         /// </summary>
         private string GetAccountID()
         {
-            var idPtr = Memory.ReadPtr(Profile + Offsets.Profile.AccountId);
-            return Memory.ReadUnityString(idPtr);
+            if (IsObserved)
+            {
+                var idPtr = Memory.ReadPtr(Base + 0x40);
+                return Memory.ReadUnityString(idPtr);
+            } else
+            {
+                var idPtr = Memory.ReadPtr(Profile + Offsets.Profile.AccountId);
+                return Memory.ReadUnityString(idPtr);
+            }
         }
         /// <summary>
         /// Gets player Level based on XP.
@@ -908,28 +954,29 @@ namespace eft_dma_radar
                 {
                     var ProceduralWeaponAnimation = Memory.ReadPtrChain(Base,  new uint[] { Offsets.Player.ProceduralWeaponAnimation, 0x10, 0x28 });
                     Memory.Write(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Mask, BitConverter.GetBytes(1)); // mask
-                    Memory.Write(ProceduralWeaponAnimation + 0x1b8, BitConverter.GetBytes(10f)); // fast aim
+                    Memory.Write(ProceduralWeaponAnimation + 0x1dc, BitConverter.GetBytes(10f)); // fast aim
                     // breath
                     var breath = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Breath); // +0x28 (breath)
                     Memory.Write(breath + Offsets.Breath.Intensity, BitConverter.GetBytes(.0f)); // +0x0A4(intensity: float
                     Memory.Write(breath + 0x0B8, new byte[] { 0x0, 0x0}); // +0x0B8(TremorOn: float + Fracture
 
                     // shooting
-                    var shotingg = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Shooting); // +0x48 (shotingg)
+                    /*var shotingg = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.Shooting); // +0x48 (shotingg)
+                    
                     Memory.Write(shotingg + 0x48, new float[] { .0f, .0f, .0f }.SelectMany(f => BitConverter.GetBytes(f)).ToArray()); // +0x40 (RecoilStrengthXy:vector2<float>)` to { 0, 0 }  and `]+0x48 (RecoilStrengthZ:vector2<float>)` to { 0, ??? } (i just write vector3 { 0,0,0 } to RecoilStrengthXy) (norecoil)
                     Memory.Write(shotingg + 0x6c, BitConverter.GetBytes(.0f));
                     Memory.Write(shotingg + 0x70, BitConverter.GetBytes(.0f));
                     Memory.Write(shotingg + 0x74, BitConverter.GetBytes(.0f));
                     Memory.Write(shotingg + 0x78, BitConverter.GetBytes(.0f));
-                    Memory.Write(shotingg + 0x7c, BitConverter.GetBytes(.0f));
+                    Memory.Write(shotingg + 0x7c, BitConverter.GetBytes(.0f));*/
 
                     var firearmController = Memory.ReadPtr(ProceduralWeaponAnimation + Offsets.ProceduralWeaponAnimation.FirearmController);
                     //Memory.Write(firearmController + 0x160, BitConverter.GetBytes(.0f));
                     //Memory.Write(firearmController + 0x164, BitConverter.GetBytes(0.0f));
                     //Memory.Write(firearmController + 0x16c, BitConverter.GetBytes(0.0f)); //		Memory.ReadValue<float>(firearmController + 0x16c)	0.155999988	float
                     //Memory.Write(firearmController + 0x174, BitConverter.GetBytes(0.0f));
-                    Memory.Write(firearmController + 0x178, BitConverter.GetBytes(0.0f));
-                    Memory.Write(firearmController + 0x17c, BitConverter.GetBytes(0.0f));
+                    //Memory.Write(firearmController + 0x178, BitConverter.GetBytes(0.0f));
+                    //Memory.Write(firearmController + 0x17c, BitConverter.GetBytes(0.0f));
                     //Memory.Write(firearmController + 0x188, BitConverter.GetBytes(0.0f));
 
                     // Walk
@@ -940,7 +987,7 @@ namespace eft_dma_radar
                     Memory.Write(motionReact + 0xD0, BitConverter.GetBytes(.0f)); // intensity
                     // forceReact
                     var forceReact = Memory.ReadPtr(ProceduralWeaponAnimation + 0x40);
-                    Memory.Write(forceReact + 0x28, BitConverter.GetBytes(.0f)); // intensity
+                    Memory.Write(forceReact + 0x30, BitConverter.GetBytes(.0f)); // intensity
 
                     if (noRecoilFirstOn)
                     {
@@ -1109,10 +1156,10 @@ namespace eft_dma_radar
                     
                     if (_fireportTransform == 0)
                     {
-                        _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x570), new uint[]
+                        _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x1A0), new uint[]
                         {
-                        0xC8,
-                        0x10,
+                        0xA8,
+                        0xd0,
                         //0x10,
                         //0x28,
                         //0x10

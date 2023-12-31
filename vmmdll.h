@@ -7,17 +7,11 @@
 // Windows may access both UTF-8 *U and Wide-Char *W versions of functions
 // while Linux may only access UTF-8 versions. Some functionality may also
 // be degraded or unavailable on Linux.
-// 
-// v5 API
-// ======
-// v5 of the API support multiple concurrent parallel analysis tasks.
-// To accomodate this significant changes have been done to the API which is
-// largely incompatible (but very similar) to the earlier API versions.
 //
-// (c) Ulf Frisk, 2018-2022
+// (c) Ulf Frisk, 2018-2023
 // Author: Ulf Frisk, pcileech@frizk.net
 //
-// Header Version: 5.0
+// Header Version: 5.8
 //
 
 #include "leechcore.h"
@@ -57,6 +51,7 @@ typedef uint16_t                            WCHAR, *PWCHAR, *LPWSTR, *LPCWSTR;
 #define _In_z_
 #define _In_opt_
 #define _In_reads_(x)
+#define _In_reads_bytes_(x)
 #define _In_reads_opt_(x)
 #define _Inout_
 #define _Inout_bytecount_(x)
@@ -79,6 +74,7 @@ typedef uint16_t                            WCHAR, *PWCHAR, *LPWSTR, *LPCWSTR;
 
 typedef struct tdVMM_HANDLE     *VMM_HANDLE;
 typedef struct tdVMMVM_HANDLE   *VMMVM_HANDLE;
+typedef BYTE                    OPAQUE_OB_HEADER[0x40];
 
 
 
@@ -122,6 +118,12 @@ typedef struct tdVMMVM_HANDLE   *VMMVM_HANDLE;
 *    -userinteract = allow vmm.dll to, on the console, query the user for
 *              information such as, but not limited to, leechcore device options.
 *              Default: user interaction = disabled.
+*    -vm       = virtual machine (VM) parsing.
+*    -vm-basic = virtual machine (VM) parsing (physical memory only).
+*    -vm-nested = virtual machine (VM) parsing (including nested VMs).
+*    -forensic-yara-rules = perfom a forensic yara scan with specified rules.
+*              Full path to source or compiled yara rules should be specified.
+*              Example: -forensic-yara-rules "C:\Temp\my_yara_rules.yar"
 *    -forensic = start a forensic scan of the physical memory immediately after
 *              startup if possible. Allowed parameter values range from 0-4.
 *              Note! forensic mode is not available for live memory.
@@ -192,6 +194,7 @@ VOID VMMDLL_MemFree(_Frees_ptr_opt_ PVOID pvMem);
 #define VMMDLL_OPT_CORE_VERBOSE_EXTRA                   0x4000000300000000  // RW
 #define VMMDLL_OPT_CORE_VERBOSE_EXTRA_TLP               0x4000000400000000  // RW
 #define VMMDLL_OPT_CORE_MAX_NATIVE_ADDRESS              0x4000000800000000  // R
+#define VMMDLL_OPT_CORE_LEECHCORE_HANDLE                0x4000001000000000  // R - underlying leechcore handle (do not close).
 
 #define VMMDLL_OPT_CORE_SYSTEM                          0x2000000100000000  // R
 #define VMMDLL_OPT_CORE_MEMORYMODEL                     0x2000000200000000  // R
@@ -207,6 +210,8 @@ VOID VMMDLL_MemFree(_Frees_ptr_opt_ PVOID pvMem);
 #define VMMDLL_OPT_CONFIG_VMM_VERSION_REVISION          0x2000000B00000000  // R
 #define VMMDLL_OPT_CONFIG_STATISTICS_FUNCTIONCALL       0x2000000C00000000  // RW - enable function call statistics (.status/statistics_fncall file)
 #define VMMDLL_OPT_CONFIG_IS_PAGING_ENABLED             0x2000000D00000000  // RW - 1/0
+#define VMMDLL_OPT_CONFIG_DEBUG                         0x2000000E00000000  // W
+#define VMMDLL_OPT_CONFIG_YARA_RULES                    0x2000000F00000000  // R
 
 #define VMMDLL_OPT_WIN_VERSION_MAJOR                    0x2000010100000000  // R
 #define VMMDLL_OPT_WIN_VERSION_MINOR                    0x2000010200000000  // R
@@ -215,6 +220,7 @@ VOID VMMDLL_MemFree(_Frees_ptr_opt_ PVOID pvMem);
 
 #define VMMDLL_OPT_FORENSIC_MODE                        0x2000020100000000  // RW - enable/retrieve forensic mode type [0-4].
 
+// REFRESH OPTIONS:
 #define VMMDLL_OPT_REFRESH_ALL                          0x2001ffff00000000  // W - refresh all caches
 #define VMMDLL_OPT_REFRESH_FREQ_MEM                     0x2001100000000000  // W - refresh memory cache (excl. TLB) [fully]
 #define VMMDLL_OPT_REFRESH_FREQ_MEM_PARTIAL             0x2001000200000000  // W - refresh memory cache (excl. TLB) [partial 33%/call]
@@ -224,21 +230,30 @@ VOID VMMDLL_MemFree(_Frees_ptr_opt_ PVOID pvMem);
 #define VMMDLL_OPT_REFRESH_FREQ_MEDIUM                  0x2001000100000000  // W - refresh medium frequency - incl. full process refresh
 #define VMMDLL_OPT_REFRESH_FREQ_SLOW                    0x2001001000000000  // W - refresh slow frequency.
 
-static LPCSTR VMMDLL_MEMORYMODEL_TOSTRING[4] = { "N/A", "X86", "X86PAE", "X64" };
+// PROCESS OPTIONS: [LO-DWORD: Process PID]
+#define VMMDLL_OPT_PROCESS_DTB                          0x2002000100000000  // W - force set process directory table base.
+#define VMMDLL_OPT_PROCESS_DTB_FAST_LOWINTEGRITY        0x2002000200000000  // W - force set process directory table base (fast, low integrity mode, with less checks) - use at own risk!.
+
+static LPCSTR VMMDLL_MEMORYMODEL_TOSTRING[5] = { "N/A", "X86", "X86PAE", "X64", "ARM64" };
 
 typedef enum tdVMMDLL_MEMORYMODEL_TP {
     VMMDLL_MEMORYMODEL_NA       = 0,
     VMMDLL_MEMORYMODEL_X86      = 1,
     VMMDLL_MEMORYMODEL_X86PAE   = 2,
-    VMMDLL_MEMORYMODEL_X64      = 3
+    VMMDLL_MEMORYMODEL_X64      = 3,
+    VMMDLL_MEMORYMODEL_ARM64    = 4,
 } VMMDLL_MEMORYMODEL_TP;
 
 typedef enum tdVMMDLL_SYSTEM_TP {
     VMMDLL_SYSTEM_UNKNOWN_PHYSICAL = 0,
-    VMMDLL_SYSTEM_UNKNOWN_X64   = 1,
-    VMMDLL_SYSTEM_WINDOWS_X64   = 2,
-    VMMDLL_SYSTEM_UNKNOWN_X86   = 3,
-    VMMDLL_SYSTEM_WINDOWS_X86   = 4
+    VMMDLL_SYSTEM_UNKNOWN_64    = 1,
+    VMMDLL_SYSTEM_WINDOWS_64    = 2,
+    VMMDLL_SYSTEM_UNKNOWN_32    = 3,
+    VMMDLL_SYSTEM_WINDOWS_32    = 4,
+    VMMDLL_SYSTEM_UNKNOWN_X64   = 1,    // deprecated - do not use!
+    VMMDLL_SYSTEM_WINDOWS_X64   = 2,    // deprecated - do not use!
+    VMMDLL_SYSTEM_UNKNOWN_X86   = 3,    // deprecated - do not use!
+    VMMDLL_SYSTEM_WINDOWS_X86   = 4     // deprecated - do not use!
 } VMMDLL_SYSTEM_TP;
 
 /*
@@ -480,8 +495,10 @@ BOOL VMMDLL_InitializePlugins(_In_ VMM_HANDLE hVMM);
 #define VMMDLL_PLUGIN_CONTEXT_MAGIC                 0xc0ffee663df9301c
 #define VMMDLL_PLUGIN_CONTEXT_VERSION               5
 #define VMMDLL_PLUGIN_REGINFO_MAGIC                 0xc0ffee663df9301d
-#define VMMDLL_PLUGIN_REGINFO_VERSION               15
-#define VMMDLL_PLUGIN_FORENSIC_JSONDATA_VERSION     0xc0ee0002
+#define VMMDLL_PLUGIN_REGINFO_VERSION               18
+#define VMMDLL_FORENSIC_JSONDATA_VERSION            0xc0ee0002
+#define VMMDLL_FORENSIC_INGEST_VIRTMEM_VERSION      0xc0dd0001
+#define VMMDLL_FORENSIC_INGEST_OBJECT_VERSION       0xc0de0001
 
 #define VMMDLL_PLUGIN_NOTIFY_VERBOSITYCHANGE        0x01
 #define VMMDLL_PLUGIN_NOTIFY_REFRESH_FAST           0x05    // refresh fast event   - at partial process refresh.
@@ -498,6 +515,8 @@ typedef struct tdVMMDLL_CSV_HANDLE                  *VMMDLL_CSV_HANDLE;
 
 #define VMMDLL_MID_MAIN                             ((VMMDLL_MODULE_ID)0x80000001)
 #define VMMDLL_MID_PYTHON                           ((VMMDLL_MODULE_ID)0x80000002)
+#define VMMDLL_MID_DEBUG                            ((VMMDLL_MODULE_ID)0x80000003)
+#define VMMDLL_MID_RUST                             ((VMMDLL_MODULE_ID)0x80000004)
 
 typedef struct tdVMMDLL_PLUGIN_CONTEXT {
     ULONG64 magic;
@@ -512,8 +531,8 @@ typedef struct tdVMMDLL_PLUGIN_CONTEXT {
     VMMDLL_MODULE_ID MID;
 } VMMDLL_PLUGIN_CONTEXT, *PVMMDLL_PLUGIN_CONTEXT;
 
-typedef struct tdVMMDLL_PLUGIN_FORENSIC_JSONDATA {
-    DWORD dwVersion;        // must equal VMMDLL_PLUGIN_FORENSIC_JSONDATA_VERSION
+typedef struct tdVMMDLL_FORENSIC_JSONDATA {
+    DWORD dwVersion;        // must equal VMMDLL_FORENSIC_JSONDATA_VERSION
     DWORD _FutureUse;
     LPSTR szjType;          // log type/name (json encoded)
     DWORD i;
@@ -529,9 +548,24 @@ typedef struct tdVMMDLL_PLUGIN_FORENSIC_JSONDATA {
     LPCSTR usz[2];          // str: utf-8 encoded
     LPCWSTR wsz[2];         // str: wide
     BYTE _Reserved[0x4000+256];
-} VMMDLL_PLUGIN_FORENSIC_JSONDATA, *PVMMDLL_PLUGIN_FORENSIC_JSONDATA;
+} VMMDLL_FORENSIC_JSONDATA, *PVMMDLL_FORENSIC_JSONDATA;
 
-typedef struct tdVMMDLL_PLUGIN_FORENSIC_INGEST_PHYSMEM {
+typedef enum tdVMMDLL_FORENSIC_INGEST_OBJECT_TYPE {
+    VMMDLL_FORENSIC_INGEST_OBJECT_TYPE_FILE = 1,
+} VMMDLL_FORENSIC_INGEST_OBJECT_TYPE;
+
+typedef struct tdVMMDLL_FORENSIC_INGEST_OBJECT {
+    OPAQUE_OB_HEADER _Reserved;
+    DWORD dwVersion;        // must equal VMMDLL_FORENSIC_INGEST_OBJECT_VERSION
+    VMMDLL_FORENSIC_INGEST_OBJECT_TYPE tp;
+    QWORD vaObject;
+    LPSTR uszText;
+    PBYTE pb;
+    DWORD cb;
+    DWORD cbReadActual;     // actual bytes read (may be spread out in pb)
+} VMMDLL_FORENSIC_INGEST_OBJECT, *PVMMDLL_FORENSIC_INGEST_OBJECT;
+
+typedef struct tdVMMDLL_FORENSIC_INGEST_PHYSMEM {
     BOOL fValid;
     QWORD pa;
     DWORD cb;
@@ -539,17 +573,31 @@ typedef struct tdVMMDLL_PLUGIN_FORENSIC_INGEST_PHYSMEM {
     DWORD cMEMs;
     PPMEM_SCATTER ppMEMs;
     PVMMDLL_MAP_PFN pPfnMap;
-} VMMDLL_PLUGIN_FORENSIC_INGEST_PHYSMEM, *PVMMDLL_PLUGIN_FORENSIC_INGEST_PHYSMEM;
+} VMMDLL_FORENSIC_INGEST_PHYSMEM, *PVMMDLL_FORENSIC_INGEST_PHYSMEM;
+
+typedef struct tdVMMDLL_FORENSIC_INGEST_VIRTMEM {
+    OPAQUE_OB_HEADER _Reserved;
+    DWORD dwVersion;        // must equal VMMDLL_FORENSIC_INGEST_VIRTMEM_VERSION
+    BOOL fPte;
+    BOOL fVad;
+    PVOID pvProcess;
+    DWORD dwPID;
+    QWORD va;
+    PBYTE pb;
+    DWORD cb;
+    DWORD cbReadActual;     // actual bytes read (may be spread out in pb)
+} VMMDLL_FORENSIC_INGEST_VIRTMEM, *PVMMDLL_FORENSIC_INGEST_VIRTMEM;
 
 typedef struct tdVMMDLL_PLUGIN_REGINFO {
-    ULONG64 magic;
-    WORD wVersion;
-    WORD wSize;
+    ULONG64 magic;                          // VMMDLL_PLUGIN_REGINFO_MAGIC
+    WORD wVersion;                          // VMMDLL_PLUGIN_REGINFO_VERSION
+    WORD wSize;                             // size of struct
     VMMDLL_MEMORYMODEL_TP tpMemoryModel;
     VMMDLL_SYSTEM_TP tpSystem;
     HMODULE hDLL;
     BOOL(*pfnPluginManager_Register)(_In_ VMM_HANDLE H, struct tdVMMDLL_PLUGIN_REGINFO *pPluginRegInfo);
-    DWORD _Reserved[32];
+    LPSTR uszPathVmmDLL;
+    DWORD _Reserved[30];
     // python plugin information - not for general use
     struct {
         BOOL fPythonStandalone;
@@ -581,11 +629,18 @@ typedef struct tdVMMDLL_PLUGIN_REGINFO {
         PVOID pvReserved[10];
     } reg_fn;
     // Optional forensic plugin functionality for forensic (more comprehensive)
-    // analysis of various data. Functions are optional. Functions are called
-    // in single-threaded mode regards to the plugin itself - but 'ingest'
-    // functions are called in-parallel multi-threaded between plugins.
-    // Functions are called in the order of:
-    // pfnInitialize(), pfnIngest*(), pfnTimeline(), pfnLogJSON(), pfnFinalize()
+    // analysis of various data. Functions are optional.
+    // Functions are called in the below order and way.
+    // 1: pfnInitialize()            - multi-threaded (between plugins).
+    // 2: (multiple types see below) - multi-threaded (between plugins).
+    //    pfnLogCSV()
+    //    pfnLogJSON()
+    //    pfnFindEvil()
+    //    pfnIngestPhysmem()
+    //    pfnIngestVirtmem()
+    // 3. pfnIngestFinalize()        - single-threaded. (pfnLogCSV/pfnLogJSON/pfnFindEvil may still be active).
+    // 4. pfnTimeline()              - single-threaded. (pfnLogCSV/pfnLogJSON/pfnFindEvil may still be active).
+    // 5. pfnFinalize()              - single-threaded.
     struct {
         PVOID(*pfnInitialize)(_In_ VMM_HANDLE H, _In_ PVMMDLL_PLUGIN_CONTEXT ctxP);
         VOID(*pfnFinalize)(_In_ VMM_HANDLE H, _In_opt_ PVOID ctxfc);
@@ -595,12 +650,14 @@ typedef struct tdVMMDLL_PLUGIN_REGINFO {
             _In_ HANDLE hTimeline,
             _In_ VOID(*pfnAddEntry)(_In_ VMM_HANDLE H, _In_ HANDLE hTimeline, _In_ QWORD ft, _In_ DWORD dwAction, _In_ DWORD dwPID, _In_ DWORD dwData32, _In_ QWORD qwData64, _In_ LPSTR uszText),
             _In_ VOID(*pfnEntryAddBySql)(_In_ VMM_HANDLE H, _In_ HANDLE hTimeline, _In_ DWORD cEntrySql, _In_ LPSTR *pszEntrySql));
-        VOID(*pfnIngestPhysmem)(_In_ VMM_HANDLE H, _In_opt_ PVOID ctxfc, _In_ PVMMDLL_PLUGIN_FORENSIC_INGEST_PHYSMEM pIngestPhysmem);
-        VOID(*pfnIngestVirtmem)(_In_ VMM_HANDLE H, _In_opt_ PVOID ctxfc, _In_ DWORD dwPID, _In_ QWORD va, _In_ PBYTE pb, _In_ DWORD cb);
+        VOID(*pfnIngestObject)(_In_ VMM_HANDLE H, _In_opt_ PVOID ctxfc, _In_ PVMMDLL_FORENSIC_INGEST_OBJECT pIngestObject);
+        VOID(*pfnIngestPhysmem)(_In_ VMM_HANDLE H, _In_opt_ PVOID ctxfc, _In_ PVMMDLL_FORENSIC_INGEST_PHYSMEM pIngestPhysmem);
+        VOID(*pfnIngestVirtmem)(_In_ VMM_HANDLE H, _In_opt_ PVOID ctxfc, _In_ PVMMDLL_FORENSIC_INGEST_VIRTMEM pIngestVirtmem);
         VOID(*pfnIngestFinalize)(_In_ VMM_HANDLE H, _In_opt_ PVOID ctxfc);
-        PVOID pvReserved[8];
+        VOID(*pfnFindEvil)(_In_ VMM_HANDLE H, _In_ VMMDLL_MODULE_ID MID, _In_opt_ PVOID ctxfc);
+        PVOID pvReserved[6];
         VOID(*pfnLogCSV)(_In_ VMM_HANDLE H, _In_ PVMMDLL_PLUGIN_CONTEXT ctxP, _In_ VMMDLL_CSV_HANDLE hCSV);
-        VOID(*pfnLogJSON)(_In_ VMM_HANDLE H, _In_ PVMMDLL_PLUGIN_CONTEXT ctxP, _In_ VOID(*pfnLogJSON)(_In_ VMM_HANDLE H, _In_ PVMMDLL_PLUGIN_FORENSIC_JSONDATA pData));
+        VOID(*pfnLogJSON)(_In_ VMM_HANDLE H, _In_ PVMMDLL_PLUGIN_CONTEXT ctxP, _In_ VOID(*pfnLogJSON)(_In_ VMM_HANDLE H, _In_ PVMMDLL_FORENSIC_JSONDATA pData));
     } reg_fnfc;
     // Additional system information - read/only by the plugins.
     struct {
@@ -880,15 +937,18 @@ BOOL VMMDLL_Scatter_Prepare(_In_ VMMDLL_SCATTER_HANDLE hS, _In_ QWORD va, _In_ D
 * -- va = start address of the memory range to read.
 * -- cb = size of memory range to read.
 * -- pb = buffer to populate with read memory when calling VMMDLL_Scatter_ExecuteRead()
-* -- pcbRead = pointer to be populated with number of bytes successfully read.
+* -- pcbRead = optional pointer to be populated with number of bytes successfully read.
 * -- return
 */
 EXPORTED_FUNCTION _Success_(return)
 BOOL VMMDLL_Scatter_PrepareEx(_In_ VMMDLL_SCATTER_HANDLE hS, _In_ QWORD va, _In_ DWORD cb, _Out_writes_opt_(cb) PBYTE pb, _Out_opt_ PDWORD pcbRead);
 
 /*
-* Prepare (add) a memory range for writing. The memory is later written when
-* calling VMMDLL_Scatter_Execute(). Writing takes place before reading.
+* Prepare (add) a memory range for writing.
+* The memory contents to write is processed when calling this function.
+* Any changes to va/pb/cb after this call will not be reflected in the write.
+* The memory is later written when calling VMMDLL_Scatter_Execute().
+* Writing takes place before reading.
 * -- hS
 * -- va = start address of the memory range to write.
 * -- pb = data to write.
@@ -896,7 +956,22 @@ BOOL VMMDLL_Scatter_PrepareEx(_In_ VMMDLL_SCATTER_HANDLE hS, _In_ QWORD va, _In_
 * -- return
 */
 EXPORTED_FUNCTION _Success_(return)
-BOOL VMMDLL_Scatter_PrepareWrite(_In_ VMMDLL_SCATTER_HANDLE hS, _In_ QWORD va, _Out_writes_(cb) PBYTE pb, _In_ DWORD cb);
+BOOL VMMDLL_Scatter_PrepareWrite(_In_ VMMDLL_SCATTER_HANDLE hS, _In_ QWORD va, _In_reads_(cb) PBYTE pb, _In_ DWORD cb);
+
+/*
+* Prepare (add) a memory range for writing.
+* Memory contents to write is processed when calling VMMDLL_Scatter_Execute().
+* The buffer pb must be valid when VMMDLL_Scatter_Execute() is called.
+* The memory is later written when calling VMMDLL_Scatter_Execute().
+* Writing takes place before reading.
+* -- hS
+* -- va = start address of the memory range to write.
+* -- pb = data to write. Buffer must be valid when VMMDLL_Scatter_Execute() is called.
+* -- cb = size of memory range to write.
+* -- return
+*/
+EXPORTED_FUNCTION _Success_(return)
+BOOL VMMDLL_Scatter_PrepareWriteEx(_In_ VMMDLL_SCATTER_HANDLE hS, _In_ QWORD va, _In_reads_(cb) PBYTE pb, _In_ DWORD cb);
 
 /*
 * Retrieve and Write memory previously populated.
@@ -959,10 +1034,10 @@ VOID VMMDLL_Scatter_CloseHandle(_In_opt_ _Post_ptr_invalid_ VMMDLL_SCATTER_HANDL
 
 #define VMMDLL_MAP_PTE_VERSION              2
 #define VMMDLL_MAP_VAD_VERSION              6
-#define VMMDLL_MAP_VADEX_VERSION            3
-#define VMMDLL_MAP_MODULE_VERSION           5
+#define VMMDLL_MAP_VADEX_VERSION            4
+#define VMMDLL_MAP_MODULE_VERSION           6
 #define VMMDLL_MAP_UNLOADEDMODULE_VERSION   2
-#define VMMDLL_MAP_EAT_VERSION              2
+#define VMMDLL_MAP_EAT_VERSION              3
 #define VMMDLL_MAP_IAT_VERSION              2
 #define VMMDLL_MAP_HEAP_VERSION             4
 #define VMMDLL_MAP_HEAPALLOC_VERSION        1
@@ -972,7 +1047,7 @@ VOID VMMDLL_Scatter_CloseHandle(_In_opt_ _Post_ptr_invalid_ VMMDLL_SCATTER_HANDL
 #define VMMDLL_MAP_NET_VERSION              3
 #define VMMDLL_MAP_PHYSMEM_VERSION          2
 #define VMMDLL_MAP_USER_VERSION             2
-#define VMMDLL_MAP_VM_VERSION               1
+#define VMMDLL_MAP_VM_VERSION               2
 #define VMMDLL_MAP_SERVICE_VERSION          3
 
 // flags to check for existence in the fPage field of VMMDLL_MAP_PTEENTRY
@@ -984,6 +1059,10 @@ VOID VMMDLL_Scatter_CloseHandle(_In_opt_ _Post_ptr_invalid_ VMMDLL_SCATTER_HANDL
 #define VMMDLL_POOLMAP_FLAG_ALL             0
 #define VMMDLL_POOLMAP_FLAG_BIG             1
 
+#define VMMDLL_MODULE_FLAG_NORMAL           0
+#define VMMDLL_MODULE_FLAG_DEBUGINFO        1
+#define VMMDLL_MODULE_FLAG_VERSIONINFO      2
+
 typedef enum tdVMMDLL_PTE_TP {
     VMMDLL_PTE_TP_NA = 0,
     VMMDLL_PTE_TP_HARDWARE = 1,
@@ -992,6 +1071,7 @@ typedef enum tdVMMDLL_PTE_TP {
     VMMDLL_PTE_TP_DEMANDZERO = 4,
     VMMDLL_PTE_TP_COMPRESSED = 5,
     VMMDLL_PTE_TP_PAGEFILE = 6,
+    VMMDLL_PTE_TP_FILE = 7,
 } VMMDLL_PTE_TP, *PVMMDLL_PTE_TP;
 
 typedef struct tdVMMDLL_MAP_PTEENTRY {
@@ -1038,9 +1118,16 @@ typedef struct tdVMMDLL_MAP_VADENTRY {
     QWORD _Reserved2;
 } VMMDLL_MAP_VADENTRY, *PVMMDLL_MAP_VADENTRY;
 
+#define VMMDLL_VADEXENTRY_FLAG_HARDWARE     0x01
+#define VMMDLL_VADEXENTRY_FLAG_W            0x10
+#define VMMDLL_VADEXENTRY_FLAG_K            0x40
+#define VMMDLL_VADEXENTRY_FLAG_NX           0x80
+
 typedef struct tdVMMDLL_MAP_VADEXENTRY {
     VMMDLL_PTE_TP tp;
-    DWORD iPML;
+    BYTE iPML;
+    BYTE pteFlags;
+    WORD _Reserved2;
     QWORD va;
     QWORD pa;
     QWORD pte;
@@ -1060,6 +1147,25 @@ typedef enum tdVMMDLL_MODULE_TP {
     VMMDLL_MODULE_TP_INJECTED = 3,
 } VMMDLL_MODULE_TP;
 
+typedef struct tdVMMDLL_MAP_MODULEENTRY_DEBUGINFO {
+    DWORD dwAge;
+    DWORD _Reserved;
+    BYTE Guid[16];
+    union { LPSTR  uszGuid;             LPWSTR wszGuid;                 };
+    union { LPSTR  uszPdbFilename;      LPWSTR wszPdbFilename;          };
+} VMMDLL_MAP_MODULEENTRY_DEBUGINFO, *PVMMDLL_MAP_MODULEENTRY_DEBUGINFO;
+
+typedef struct tdVMMDLL_MAP_MODULEENTRY_VERSIONINFO {
+    union { LPSTR  uszCompanyName;      LPWSTR wszCompanyName;          };
+    union { LPSTR  uszFileDescription;  LPWSTR wszFileDescription;      };
+    union { LPSTR  uszFileVersion;      LPWSTR wszFileVersion;          };
+    union { LPSTR  uszInternalName;     LPWSTR wszInternalName;         };
+    union { LPSTR  uszLegalCopyright;   LPWSTR wszLegalCopyright;       };
+    union { LPSTR  uszOriginalFilename; LPWSTR wszFileOriginalFilename; };
+    union { LPSTR  uszProductName;      LPWSTR wszProductName;          };
+    union { LPSTR  uszProductVersion;   LPWSTR wszProductVersion;       };
+} VMMDLL_MAP_MODULEENTRY_VERSIONINFO, *PVMMDLL_MAP_MODULEENTRY_VERSIONINFO;
+
 typedef struct tdVMMDLL_MAP_MODULEENTRY {
     QWORD vaBase;
     QWORD vaEntry;
@@ -1075,7 +1181,9 @@ typedef struct tdVMMDLL_MAP_MODULEENTRY {
     DWORD cEAT;
     DWORD cIAT;
     DWORD _Reserved2;
-    QWORD _Reserved1[2];
+    QWORD _Reserved1[3];
+    PVMMDLL_MAP_MODULEENTRY_DEBUGINFO pExDebugInfo;         // not included by default - use VMMDLL_MODULE_FLAG_DEBUGINFO to include.
+    PVMMDLL_MAP_MODULEENTRY_VERSIONINFO pExVersionInfo;     // not included by default - use VMMDLL_MODULE_FLAG_VERSIONINFO to include.
 } VMMDLL_MAP_MODULEENTRY, *PVMMDLL_MAP_MODULEENTRY;
 
 typedef struct tdVMMDLL_MAP_UNLOADEDMODULEENTRY {
@@ -1097,6 +1205,7 @@ typedef struct tdVMMDLL_MAP_EATENTRY {
     DWORD oNamesArray;              // PIMAGE_EXPORT_DIRECTORY->AddressOfNames[oNamesArray]
     DWORD _FutureUse1;
     union { LPSTR  uszFunction; LPWSTR wszFunction; };      // U/W dependant
+    union { LPSTR  uszForwardedFunction; LPWSTR wszForwardedFunction; };    // U/W dependant (function or ordinal name if exists).
 } VMMDLL_MAP_EATENTRY, *PVMMDLL_MAP_EATENTRY;
 
 typedef struct tdVMMDLL_MAP_IATENTRY {
@@ -1193,7 +1302,9 @@ typedef struct tdVMMDLL_MAP_THREADENTRY {
     UCHAR bSuspendCount;
     UCHAR bWaitReason;
     UCHAR _FutureUse1[2];
-    DWORD _FutureUse2[15];
+    DWORD _FutureUse2[11];
+    QWORD vaImpersonationToken;
+    QWORD vaWin32StartAddress;
 } VMMDLL_MAP_THREADENTRY, *PVMMDLL_MAP_THREADENTRY;
 
 typedef struct tdVMMDLL_MAP_HANDLEENTRY {
@@ -1299,7 +1410,8 @@ typedef struct tdVMMDLL_MAP_USERENTRY {
 
 typedef enum tdVMMDLL_VM_TP {
     VMMDLL_VM_TP_UNKNOWN = 0,
-    VMMDLL_VM_TP_HV = 1
+    VMMDLL_VM_TP_HV      = 1,
+    VMMDLL_VM_TP_HV_WHVP = 2
 } VMMDLL_VM_TP;
 
 typedef struct tdVMMDLL_MAP_VMENTRY {
@@ -1314,6 +1426,7 @@ typedef struct tdVMMDLL_MAP_VMENTRY {
     DWORD dwVersionBuild;
     VMMDLL_SYSTEM_TP tpSystem;
     DWORD dwParentVmmMountID;
+    DWORD dwVmMemPID;
 } VMMDLL_MAP_VMENTRY, *PVMMDLL_MAP_VMENTRY;
 
 typedef struct tdVMMDLL_MAP_SERVICEENTRY {
@@ -1333,7 +1446,7 @@ typedef struct tdVMMDLL_MAP_SERVICEENTRY {
 } VMMDLL_MAP_SERVICEENTRY, *PVMMDLL_MAP_SERVICEENTRY;
 
 typedef struct tdVMMDLL_MAP_PTE {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_PTE_VERSION
     DWORD _Reserved1[5];
     PBYTE pbMultiText;              // NULL or multi-wstr pointed into by VMMDLL_MAP_VADENTRY.wszText
     DWORD cbMultiText;
@@ -1342,7 +1455,7 @@ typedef struct tdVMMDLL_MAP_PTE {
 } VMMDLL_MAP_PTE, *PVMMDLL_MAP_PTE;
 
 typedef struct tdVMMDLL_MAP_VAD {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_VAD_VERSION
     DWORD _Reserved1[4];
     DWORD cPage;                    // # pages in vad map.
     PBYTE pbMultiText;              // NULL or multi-wstr pointed into by VMMDLL_MAP_VADENTRY.wszText
@@ -1352,14 +1465,14 @@ typedef struct tdVMMDLL_MAP_VAD {
 } VMMDLL_MAP_VAD, *PVMMDLL_MAP_VAD;
 
 typedef struct tdVMMDLL_MAP_VADEX {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_VADEX_VERSION
     DWORD _Reserved1[4];
     DWORD cMap;                     // # map entries.
     VMMDLL_MAP_VADEXENTRY pMap[];   // map entries.
 } VMMDLL_MAP_VADEX, *PVMMDLL_MAP_VADEX;
 
 typedef struct tdVMMDLL_MAP_MODULE {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_MODULE_VERSION
     DWORD _Reserved1[5];
     PBYTE pbMultiText;              // multi-wstr pointed into by VMMDLL_MAP_MODULEENTRY.wszText
     DWORD cbMultiText;
@@ -1368,7 +1481,7 @@ typedef struct tdVMMDLL_MAP_MODULE {
 } VMMDLL_MAP_MODULE, *PVMMDLL_MAP_MODULE;
 
 typedef struct tdVMMDLL_MAP_UNLOADEDMODULE {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_UNLOADEDMODULE_VERSION
     DWORD _Reserved1[5];
     PBYTE pbMultiText;              // multi-wstr pointed into by VMMDLL_MAP_MODULEENTRY.wszText
     DWORD cbMultiText;
@@ -1377,11 +1490,12 @@ typedef struct tdVMMDLL_MAP_UNLOADEDMODULE {
 } VMMDLL_MAP_UNLOADEDMODULE, *PVMMDLL_MAP_UNLOADEDMODULE;
 
 typedef struct tdVMMDLL_MAP_EAT {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_EAT_VERSION
     DWORD dwOrdinalBase;
     DWORD cNumberOfNames;
     DWORD cNumberOfFunctions;
-    DWORD _Reserved1[4];
+    DWORD cNumberOfForwardedFunctions;
+    DWORD _Reserved1[3];
     QWORD vaModuleBase;
     QWORD vaAddressOfFunctions;
     QWORD vaAddressOfNames;
@@ -1392,7 +1506,7 @@ typedef struct tdVMMDLL_MAP_EAT {
 } VMMDLL_MAP_EAT, *PVMMDLL_MAP_EAT;
 
 typedef struct tdVMMDLL_MAP_IAT {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_IAT_VERSION
     DWORD _Reserved1[5];
     QWORD vaModuleBase;
     PBYTE pbMultiText;              // multi-str pointed into by VMM_MAP_EATENTRY.[wszFunction|wszModule]
@@ -1402,7 +1516,7 @@ typedef struct tdVMMDLL_MAP_IAT {
 } VMMDLL_MAP_IAT, *PVMMDLL_MAP_IAT;
 
 typedef struct tdVMMDLL_MAP_HEAP {
-    DWORD dwVersion;
+    DWORD dwVersion;                            // VMMDLL_MAP_HEAP_VERSION
     DWORD _Reserved1[7];
     PVMMDLL_MAP_HEAP_SEGMENTENTRY pSegments;    // heap segment entries.
     DWORD cSegments;                            // # heap segment entries.
@@ -1411,7 +1525,7 @@ typedef struct tdVMMDLL_MAP_HEAP {
 } VMMDLL_MAP_HEAP, *PVMMDLL_MAP_HEAP;
 
 typedef struct tdVMMDLL_MAP_HEAPALLOC {
-    DWORD dwVersion;
+    DWORD dwVersion;                    // VMMDLL_MAP_HEAPALLOC_VERSION
     DWORD _Reserved1[7];
     PVOID _Reserved2[2];
     DWORD cMap;                         // # map entries.
@@ -1419,14 +1533,14 @@ typedef struct tdVMMDLL_MAP_HEAPALLOC {
 } VMMDLL_MAP_HEAPALLOC, *PVMMDLL_MAP_HEAPALLOC;
 
 typedef struct tdVMMDLL_MAP_THREAD {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_THREAD_VERSION
     DWORD _Reserved[8];
     DWORD cMap;                     // # map entries.
     VMMDLL_MAP_THREADENTRY pMap[];  // map entries.
 } VMMDLL_MAP_THREAD, *PVMMDLL_MAP_THREAD;
 
 typedef struct tdVMMDLL_MAP_HANDLE {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_HANDLE_VERSION
     DWORD _Reserved1[5];
     PBYTE pbMultiText;              // multi-wstr pointed into by VMMDLL_MAP_HANDLEENTRY.wszText
     DWORD cbMultiText;
@@ -1435,7 +1549,7 @@ typedef struct tdVMMDLL_MAP_HANDLE {
 } VMMDLL_MAP_HANDLE, *PVMMDLL_MAP_HANDLE;
 
 typedef struct tdVMMDLL_MAP_POOL {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_POOL_VERSION
     DWORD _Reserved1[6];
     DWORD cbTotal;                  // # bytes to represent this pool map object
     PDWORD piTag2Map;               // dword map array (size: cMap): tag index to map index.
@@ -1446,7 +1560,7 @@ typedef struct tdVMMDLL_MAP_POOL {
 } VMMDLL_MAP_POOL, *PVMMDLL_MAP_POOL;
 
 typedef struct tdVMMDLL_MAP_NET {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_NET_VERSION
     DWORD _Reserved1;
     PBYTE pbMultiText;              // multi-wstr pointed into by VMM_MAP_NETENTRY.wszText
     DWORD cbMultiText;
@@ -1455,7 +1569,7 @@ typedef struct tdVMMDLL_MAP_NET {
 } VMMDLL_MAP_NET, *PVMMDLL_MAP_NET;
 
 typedef struct tdVMMDLL_MAP_PHYSMEM {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_PHYSMEM_VERSION
     DWORD _Reserved1[5];
     DWORD cMap;                     // # map entries.
     DWORD _Reserved2;
@@ -1463,7 +1577,7 @@ typedef struct tdVMMDLL_MAP_PHYSMEM {
 } VMMDLL_MAP_PHYSMEM, *PVMMDLL_MAP_PHYSMEM;
 
 typedef struct tdVMMDLL_MAP_USER {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_USER_VERSION
     DWORD _Reserved1[5];
     PBYTE pbMultiText;              // multi-wstr pointed into by VMMDLL_MAP_USERENTRY.wszText
     DWORD cbMultiText;
@@ -1472,7 +1586,7 @@ typedef struct tdVMMDLL_MAP_USER {
 } VMMDLL_MAP_USER, *PVMMDLL_MAP_USER;
 
 typedef struct tdVMMDLL_MAP_VM {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_VM_VERSION
     DWORD _Reserved1[5];
     PBYTE pbMultiText;              // multi-wstr pointed into by VMMDLL_MAP_VMENTRY.wszText
     DWORD cbMultiText;
@@ -1481,7 +1595,7 @@ typedef struct tdVMMDLL_MAP_VM {
 } VMMDLL_MAP_VM, *PVMMDLL_MAP_VM;
 
 typedef struct tdVMMDLL_MAP_SERVICE {
-    DWORD dwVersion;
+    DWORD dwVersion;                // VMMDLL_MAP_SERVICE_VERSION
     DWORD _Reserved1[5];
     PBYTE pbMultiText;              // multi-wstr pointed into by VMMDLL_MAP_SERVICEENTRY.wsz*
     DWORD cbMultiText;
@@ -1535,11 +1649,12 @@ BOOL VMMDLL_Map_GetVadEx(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ DWORD oPag
 * -- hVMM
 * -- dwPID
 * -- ppModuleMap =  ptr to receive result on success. must be free'd with VMMDLL_MemFree().
+* -- flags = optional flags as specified by VMMDLL_MODULE_FLAG_*
 * -- return = success/fail.
 */
 EXPORTED_FUNCTION
-_Success_(return) BOOL VMMDLL_Map_GetModuleU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _Out_ PVMMDLL_MAP_MODULE *ppModuleMap);
-_Success_(return) BOOL VMMDLL_Map_GetModuleW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _Out_ PVMMDLL_MAP_MODULE *ppModuleMap);
+_Success_(return) BOOL VMMDLL_Map_GetModuleU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _Out_ PVMMDLL_MAP_MODULE *ppModuleMap, _In_ DWORD flags);
+_Success_(return) BOOL VMMDLL_Map_GetModuleW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _Out_ PVMMDLL_MAP_MODULE *ppModuleMap, _In_ DWORD flags);
 
 /*
 * Retrieve a module (.dll) entry given a process and module name.
@@ -1548,11 +1663,12 @@ _Success_(return) BOOL VMMDLL_Map_GetModuleW(_In_ VMM_HANDLE hVMM, _In_ DWORD dw
 * -- dwPID
 * -- [uw]szModuleName = module name (or ""/NULL for 1st module entry).
 * -- ppModuleMapEntry =  ptr to receive result on success. must be free'd with VMMDLL_MemFree().
+* -- flags = optional flags as specified by VMMDLL_MODULE_FLAG_*
 * -- return = success/fail.
 */
 EXPORTED_FUNCTION
-_Success_(return) BOOL VMMDLL_Map_GetModuleFromNameU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_opt_ LPSTR  uszModuleName, _Out_ PVMMDLL_MAP_MODULEENTRY *ppModuleMapEntry);
-_Success_(return) BOOL VMMDLL_Map_GetModuleFromNameW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_opt_ LPWSTR wszModuleName, _Out_ PVMMDLL_MAP_MODULEENTRY *ppModuleMapEntry);
+_Success_(return) BOOL VMMDLL_Map_GetModuleFromNameU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_opt_ LPSTR  uszModuleName, _Out_ PVMMDLL_MAP_MODULEENTRY *ppModuleMapEntry, _In_ DWORD flags);
+_Success_(return) BOOL VMMDLL_Map_GetModuleFromNameW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_opt_ LPWSTR wszModuleName, _Out_ PVMMDLL_MAP_MODULEENTRY *ppModuleMapEntry, _In_ DWORD flags);
 
 /*
 * Retrieve the unloaded modules (.dll/.sys) for the specified process.
@@ -1724,12 +1840,13 @@ _Success_(return) BOOL VMMDLL_Map_GetServicesW(_In_ VMM_HANDLE hVMM, _Out_ PVMMD
 
 #define VMMDLL_MEM_SEARCH_VERSION           0xfe3e0002
 #define VMMDLL_MEM_SEARCH_MAX               16
+#define VMMDLL_MEM_SEARCH_MAXLENGTH         32
 
 typedef struct tdVMMDLL_MEM_SEARCH_CONTEXT_SEARCHENTRY {
-    DWORD cbAlign;              // byte-align at 2^x - 0, 1, 2, 4, 8, 16, .. bytes.
-    DWORD cb;                   // number of bytes to search (1-32).
-    BYTE pb[32];
-    BYTE pbSkipMask[32];        // skip bitmask '0' = match, '1' = wildcard.
+    DWORD cbAlign;                                  // byte-align at 2^x - 0, 1, 2, 4, 8, 16, .. bytes.
+    DWORD cb;                                       // number of bytes to search (1-32).
+    BYTE pb[VMMDLL_MEM_SEARCH_MAXLENGTH];
+    BYTE pbSkipMask[VMMDLL_MEM_SEARCH_MAXLENGTH];   // skip bitmask '0' = match, '1' = wildcard.
 } VMMDLL_MEM_SEARCH_CONTEXT_SEARCHENTRY, *PVMMDLL_MEM_SEARCH_CONTEXT_SEARCHENTRY;
 
 /*
@@ -1740,7 +1857,7 @@ typedef struct tdVMMDLL_MEM_SEARCH_CONTEXT {
     DWORD _Filler[2];
     BOOL fAbortRequested;       // may be set by caller to abort processing prematurely.
     DWORD cMaxResult;           // # max result entries. '0' = 1 entry. max 0x10000 entries.
-    DWORD cSearch;              // number of valid search entries
+    DWORD cSearch;              // number of search entries.
     VMMDLL_MEM_SEARCH_CONTEXT_SEARCHENTRY search[VMMDLL_MEM_SEARCH_MAX];
     QWORD vaMin;                // min address to search (page-aligned).
     QWORD vaMax;                // max address to search (page-aligned), if 0 max memory is assumed.
@@ -1772,7 +1889,7 @@ typedef struct tdVMMDLL_MEM_SEARCH_CONTEXT {
 * and wait a short while.
 * CALLER FREE: VMMDLL_MemFree(*ppva)
 * -- hVMM
-* -- dwPID
+* -- dwPID - PID of target process, (DWORD)-1 to read physical memory.
 * -- ctx
 * -- ppva = pointer to receive addresses found. Free'd with VMMDLL_MemFree().
 * -- pcva = pointer to receive number of addresses in ppva. not bytes!
@@ -1790,10 +1907,161 @@ BOOL VMMDLL_MemSearch(
 
 
 //-----------------------------------------------------------------------------
+// MEMORY YARA SEARCH FUNCTIONALITY:
+// The yara search functionality requires that vmmyara.[dll|so] is present.
+// The vmmyara project is found at: https://github.com/ufrisk/vmmyara
+//-----------------------------------------------------------------------------
+
+// =========== START SHARED STRUCTS WITH <vmmdll.h/vmmyara.h> ===========
+#ifndef VMMYARA_RULE_MATCH_DEFINED
+#define VMMYARA_RULE_MATCH_DEFINED
+
+#define VMMYARA_RULE_MATCH_VERSION          0xfedc0003
+#define VMMYARA_RULE_MATCH_TAG_MAX          8
+#define VMMYARA_RULE_MATCH_META_MAX         16
+#define VMMYARA_RULE_MATCH_STRING_MAX       8
+#define VMMYARA_RULE_MATCH_OFFSET_MAX       16
+
+/*
+* Struct with match information upon a match in VmmYara_RulesScanMemory().
+*/
+typedef struct tdVMMYARA_RULE_MATCH {
+    DWORD dwVersion;                    // VMMYARA_RULE_MATCH_VERSION
+    DWORD flags;
+    LPSTR szRuleIdentifier;
+    DWORD cTags;
+    LPSTR szTags[VMMYARA_RULE_MATCH_TAG_MAX];
+    DWORD cMeta;
+    struct {
+        LPSTR szIdentifier;
+        LPSTR szString;
+    } Meta[VMMYARA_RULE_MATCH_META_MAX];
+    DWORD cStrings;
+    struct {
+        LPSTR szString;
+        DWORD cMatch;
+        SIZE_T cbMatchOffset[VMMYARA_RULE_MATCH_OFFSET_MAX];
+    } Strings[VMMYARA_RULE_MATCH_STRING_MAX];
+} VMMYARA_RULE_MATCH, *PVMMYARA_RULE_MATCH;
+
+#endif /* VMMYARA_RULE_MATCH_DEFINED */
+
+#ifndef VMMYARA_SCAN_MEMORY_CALLBACK_DEFINED
+#define VMMYARA_SCAN_MEMORY_CALLBACK_DEFINED
+
+/*
+* Callback function to be called by VmmYara_RulesScanMemory() upon a match.
+* -- pvContext = user context set in call to VmmYara_ScanMemory().
+* -- pRuleMatch = pointer to match information.
+* -- pbBuffer = the memory buffer that was scanned.
+* -- cbBuffer = the size of the memory buffer that was scanned.
+* -- return = return TRUE to continue scanning, FALSE to stop scanning.
+*/
+typedef BOOL(*VMMYARA_SCAN_MEMORY_CALLBACK)(
+    _In_ PVOID pvContext,
+    _In_ PVMMYARA_RULE_MATCH pRuleMatch,
+    _In_reads_bytes_(cbBuffer) PBYTE pbBuffer,
+    _In_ SIZE_T cbBuffer
+);
+
+#endif /* VMMYARA_SCAN_MEMORY_CALLBACK_DEFINED */
+// =========== END SHARED STRUCTS WITH <vmmdll.h/vmmyara.h> ===========
+
+#define VMMDLL_YARA_CONFIG_VERSION                  0xdec30001
+#define VMMDLL_YARA_MEMORY_CALLBACK_CONTEXT_VERSION 0xdec40002
+#define VMMDLL_YARA_CONFIG_MAX_RESULT               0x00010000      // max 65k results.
+
+typedef struct tdVMMDLL_YARA_CONFIG *PVMMDLL_YARA_CONFIG;           // forward declaration.
+
+/*
+* Callback function to tell whether a section of memory should be scanned or not.
+* -- ctx = pointer to PVMMDLL_YARA_CONFIG context.
+* -- pePte = pointer to PTE entry if the memory region is backed by PTE map. Otherwise NULL.
+* -- peVad = pointer to VAD entry if the memory region is backed by VAD map. Otherwise NULL.
+* -- return = return TRUE to scan the memory region, FALSE to skip it.
+*/
+typedef BOOL(*VMMYARA_SCAN_FILTER_CALLBACK)(
+    _In_ PVMMDLL_YARA_CONFIG ctx,
+    _In_opt_ PVMMDLL_MAP_PTEENTRY pePte,
+    _In_opt_ PVMMDLL_MAP_VADENTRY peVad
+);
+
+/*
+* Yara search configuration struct.
+*/
+typedef struct tdVMMDLL_YARA_CONFIG {
+    DWORD dwVersion;            // VMMDLL_YARA_CONFIG_VERSION
+    DWORD _Filler[2];
+    BOOL fAbortRequested;       // may be set by caller to abort processing prematurely.
+    DWORD cMaxResult;           // # max result entries. max 0x10000 entries. 0 = max entries.
+    DWORD cRules;               // number of rules to use - if compiled rules only 1 is allowed.
+    LPSTR *pszRules;            // array of rules to use - either filenames or in-memory rules.
+    QWORD vaMin;
+    QWORD vaMax;
+    QWORD vaCurrent;            // current address (may be read by caller).
+    DWORD _Filler2;
+    DWORD cResult;              // number of search hits.
+    QWORD cbReadTotal;          // total number of bytes read.
+    PVOID pvUserPtrOpt;         // optional pointer set by caller (used for context passing to callbacks)
+    // match callback function (recommended but optional).
+    // return = continue search(TRUE), abort search(FALSE).
+    VMMYARA_SCAN_MEMORY_CALLBACK pfnScanMemoryCB;
+    // non-recommended features:
+    QWORD ReadFlags;            // read flags as in VMMDLL_FLAG_*
+    BOOL fForcePTE;             // force PTE method for virtual address reads.
+    BOOL fForceVAD;             // force VAD method for virtual address reads.
+    // optional filter callback function for virtual address reads:
+    // for ranges inbetween vaMin:vaMax callback with pte or vad entry.
+    // return: read from range(TRUE), do not read from range(FALSE).
+    VMMYARA_SCAN_FILTER_CALLBACK pfnFilterOptCB;
+    PVOID pvUserPtrOpt2;        // optional pointer set by caller (not used by MemProcFS).
+    QWORD _Reserved;
+} VMMDLL_YARA_CONFIG, *PVMMDLL_YARA_CONFIG;
+
+/*
+* Yara search callback struct which created by MemProcFS internally and is
+* passed to the callback function supplied by the caller in VMMDLL_YaraSearch().
+*/
+typedef struct tdVMMDLL_YARA_MEMORY_CALLBACK_CONTEXT {
+    DWORD dwVersion;
+    DWORD dwPID;
+    PVOID pUserContext;
+    QWORD vaObject;
+    QWORD va;
+    PBYTE pb;
+    DWORD cb;
+    LPSTR uszTag[1];    // min 1 char (but may be more).
+} VMMDLL_YARA_MEMORY_CALLBACK_CONTEXT, *PVMMDLL_YARA_MEMORY_CALLBACK_CONTEXT;
+
+/*
+* Perform a yara search in the address space of a process.
+* NB! it may take a long time for this function to return.
+* -- hVMM
+* -- dwPID - PID of target process, (DWORD)-1 to read physical memory.
+* -- pYaraConfig
+* -- ppva = pointer to receive addresses found. Free'd with VMMDLL_MemFree().
+* -- pcva = pointer to receive number of addresses in ppva. not bytes!
+* -- return
+*/
+EXPORTED_FUNCTION _Success_(return)
+BOOL VMMDLL_YaraSearch(
+    _In_ VMM_HANDLE hVMM,
+    _In_ DWORD dwPID,
+    _In_ PVMMDLL_YARA_CONFIG pYaraConfig,
+    _Out_opt_ PQWORD *ppva,
+    _Out_opt_ PDWORD pcva
+);
+
+
+
+//-----------------------------------------------------------------------------
 // WINDOWS SPECIFIC PAGE FRAME NUMBER (PFN) FUNCTIONALITY BELOW
 //-----------------------------------------------------------------------------
 
 #define VMMDLL_MAP_PFN_VERSION              1
+
+#define VMMDLL_PFN_FLAG_NORMAL              0
+#define VMMDLL_PFN_FLAG_EXTENDED            1
 
 static LPCSTR VMMDLL_PFN_TYPE_TEXT[] = { "Zero", "Free", "Standby", "Modifiy", "ModNoWr", "Bad", "Active", "Transit" };
 static LPCSTR VMMDLL_PFN_TYPEEXTENDED_TEXT[] = { "-", "Unused", "ProcPriv", "PageTable", "LargePage", "DriverLock", "Shareable", "File" };
@@ -1883,10 +2151,29 @@ typedef struct tdVMMDLL_MAP_PFN {
 EXPORTED_FUNCTION _Success_(return)
 BOOL VMMDLL_Map_GetPfn(
     _In_ VMM_HANDLE hVMM,
-    _In_ DWORD pPfns[],
+    _In_reads_(cPfns) DWORD pPfns[],
     _In_ DWORD cPfns,
     _Out_writes_bytes_opt_(*pcbPfnMap) PVMMDLL_MAP_PFN pPfnMap,
     _Inout_ PDWORD pcbPfnMap
+);
+
+/*
+* Retrieve PFN information:
+* CALLER FREE: VMMDLL_MemFree(*ppPfnMap)
+* -- hVMM
+* -- pPfns = PFNs to retrieve.
+* -- cPfns = number of PFNs to retrieve.
+* -- ppPfnMap =  ptr to receive result on success. must be free'd with VMMDLL_MemFree().
+* -- flags = optional flags as specified by VMMDLL_PFN_FLAG_*
+* -- return = success/fail.
+*/
+EXPORTED_FUNCTION _Success_(return)
+BOOL VMMDLL_Map_GetPfnEx(
+    _In_ VMM_HANDLE hVMM,
+    _In_reads_(cPfns) DWORD pPfns[],
+    _In_ DWORD cPfns,
+    _Out_ PVMMDLL_MAP_PFN *ppPfnMap,
+    _In_ DWORD flags
 );
 
 
@@ -1977,6 +2264,22 @@ BOOL VMMDLL_ProcessGetInformation(
     _In_ PSIZE_T pcbProcessInformation
 );
 
+/*
+* Retrieve various information from all processes (including terminated).
+* CALLER FREE : VMMDLL_MemFree(*ppProcessInformationAll)
+* -- hVMM
+* -- ptr to receive result array of pcProcessInformation items on success.
+*    Must be free'd with VMMDLL_MemFree().
+* -- ptr to DWORD to receive number of items processes on success.
+* -- return = success/fail.
+*/
+EXPORTED_FUNCTION _Success_(return)
+BOOL VMMDLL_ProcessGetInformationAll(
+    _In_ VMM_HANDLE hVMM,
+    _Out_ PVMMDLL_PROCESS_INFORMATION *ppProcessInformationAll,
+    _Out_ PDWORD pcProcessInformation
+);
+
 #define VMMDLL_PROCESS_INFORMATION_OPT_STRING_PATH_KERNEL           1
 #define VMMDLL_PROCESS_INFORMATION_OPT_STRING_PATH_USER_IMAGE       2
 #define VMMDLL_PROCESS_INFORMATION_OPT_STRING_CMDLINE               3
@@ -2024,8 +2327,8 @@ _Success_(return) BOOL VMMDLL_ProcessGetSectionsW(_In_ VMM_HANDLE hVMM, _In_ DWO
 * -- return = virtual address of function, zero on fail.
 */
 EXPORTED_FUNCTION
-ULONG64 VMMDLL_ProcessGetProcAddressU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPSTR  uszModuleName, _In_ LPSTR szFunctionName);
-ULONG64 VMMDLL_ProcessGetProcAddressW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPWSTR wszModuleName, _In_ LPSTR szFunctionName);
+_Success_(return != 0) ULONG64 VMMDLL_ProcessGetProcAddressU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPSTR  uszModuleName, _In_ LPSTR szFunctionName);
+_Success_(return != 0) ULONG64 VMMDLL_ProcessGetProcAddressW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPWSTR wszModuleName, _In_ LPSTR szFunctionName);
 
 /*
 * Retrieve the base address of a given module.
@@ -2035,8 +2338,8 @@ ULONG64 VMMDLL_ProcessGetProcAddressW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _I
 * -- return = virtual address of module base, zero on fail.
 */
 EXPORTED_FUNCTION
-ULONG64 VMMDLL_ProcessGetModuleBaseU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPSTR  uszModuleName);
-ULONG64 VMMDLL_ProcessGetModuleBaseW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPWSTR wszModuleName);
+_Success_(return != 0) ULONG64 VMMDLL_ProcessGetModuleBaseU(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPSTR  uszModuleName);
+_Success_(return != 0) ULONG64 VMMDLL_ProcessGetModuleBaseW(_In_ VMM_HANDLE hVMM, _In_ DWORD dwPID, _In_ LPWSTR wszModuleName);
 
 
 
@@ -2493,15 +2796,17 @@ EXPORTED_FUNCTION
 DWORD VMMDLL_VmMemWriteScatter(_In_ VMM_HANDLE hVMM, _In_ VMMVM_HANDLE hVM, _Inout_ PPMEM_SCATTER ppMEMsGPA, _In_ DWORD cpMEMsGPA);
 
 /*
-* Translate a virtual machine (VM) guest physical address (GPA) to a physical address (PA).
+* Translate a virtual machine (VM) guest physical address (GPA) to:
+* (1) Physical Address (PA) _OR_ (2) Virtual Address (VA) in 'vmmem' process.
 * -- hVMM
-* -- hVM
-* -- qwGPA
-* -- pqwPA
+* -- HVM
+* -- qwGPA = guest physical address to translate.
+* -- pPA = translated physical address (if exists).
+* -- pVA = translated virtual address inside 'vmmem' process (if exists).
 * -- return = success/fail.
 */
 EXPORTED_FUNCTION _Success_(return)
-BOOL VMMDLL_VmMemGPA2Phys(_In_ VMM_HANDLE hVMM, _In_ VMMVM_HANDLE hVM, _In_ ULONG64 qwGPA, _Out_ PULONG64 pqwPA);
+BOOL VMMDLL_VmMemTranslateGPA(_In_ VMM_HANDLE H, _In_ VMMVM_HANDLE hVM, _In_ ULONG64 qwGPA, _Out_opt_ PULONG64 pPA, _Out_opt_ PULONG64 pVA);
 
 
 

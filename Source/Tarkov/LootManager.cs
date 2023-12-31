@@ -70,8 +70,8 @@ namespace eft_dma_radar
                 var baseObject = round4.AddEntry(i, 3, interactiveClass, typeof(ulong), null, Offsets.LootInteractiveClass.LootBaseObject);
                 var className0 = round4.AddEntry(i, 7, interactiveClass, typeof(ulong), null, Offsets.Kernel.ClassName[0]);
                 var className1 = round5.AddEntry(i, 8, className0, typeof(ulong), null, Offsets.Kernel.ClassName[1]);
-                var gameObject = round5.AddEntry(i, 4, baseObject, typeof(ulong), null, Offsets.LootBaseObject.GameObject);
                 var className = round6.AddEntry(i, 9, className1, typeof(ulong), null, Offsets.Kernel.ClassName[2]);
+                var gameObject = round5.AddEntry(i, 4, baseObject, typeof(ulong), null, Offsets.LootBaseObject.GameObject);
                 var pGameObjectName = round6.AddEntry(i, 5, gameObject, typeof(ulong), null, Offsets.GameObject.ObjectName);
                 var name = round7.AddEntry(i, 6, pGameObjectName, typeof(string), 64);
             }
@@ -167,13 +167,13 @@ namespace eft_dma_radar
                                 }
                                 // EFT.Interactive.LootableContainer 
                                 var itemOwner = Memory.ReadPtr(interactiveClass + Offsets.LootInteractiveClass.ContainerItemOwner);
-                                //var itemOwnerClassName = Memory.ReadString(Memory.ReadPtrChain(itemOwner, Offsets.Kernel.ClassName), 64);
+                                var itemOwnerClassName = Memory.ReadString(Memory.ReadPtrChain(itemOwner, Offsets.Kernel.ClassName), 64);
                                 var itemBase = Memory.ReadPtr(itemOwner + Offsets.ContainerItemOwner.LootItemBase);
-                                //var itemClassName = Memory.ReadString(Memory.ReadPtrChain(itemBase, Offsets.Kernel.ClassName), 64);
+                                var itemClassName = Memory.ReadString(Memory.ReadPtrChain(itemBase, Offsets.Kernel.ClassName), 64);
                                 var grids = Memory.ReadPtr(itemBase + Offsets.LootItemBase.Grids);
                                 if (grids == 0)
                                     grids = Memory.ReadPtr(itemBase + 0x110);
-                                //Program.Log($"loading container {name}:{classNameStr}:{itemClassName}:{itemOwnerClassName}");
+                                Program.Log($"loading container {name}:{classNameStr}:{itemClassName}:{itemOwnerClassName}");
                                 GetItemsInGrid(grids, "ignore", pos, loot);
                                 added = true;
                             }

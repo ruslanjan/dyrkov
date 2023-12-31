@@ -235,6 +235,17 @@ namespace eft_dma_radar
         #endregion
 
         #region Custom EFT Extensions
+
+        public static string[] Friends =
+        {
+            "AligatorTraktor",
+            "TRANS_SVITOR",
+            "LordDudets",
+            "n0081kk",
+            "_DED__",
+            "KYBER_DED"
+        };
+
         public static AIRole GetRole(this WildSpawnType type)
         {
             switch (type)
@@ -425,8 +436,103 @@ namespace eft_dma_radar
                         Name = "followerZryachiy",
                         Type = PlayerType.AIRaider
                     };
-
+                case WildSpawnType.bossBoar:
+                    return new AIRole()
+                    {
+                        Name = "bossBoar",
+                        Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.followerBoar:
+                    return new AIRole()
+                    {
+                        Name = "followerBoar",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.arenaFighter:
+                    return new AIRole()
+                    {
+                        Name = "arenaFighter",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.arenaFighterEvent:
+                    return new AIRole()
+                    {
+                        Name = "arenaFighterEvent",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.bossBoarSniper:
+                    return new AIRole()
+                    {
+                        Name = "bossBoarSniper",
+                        Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.crazyAssaultEvent:
+                    return new AIRole()
+                    {
+                        Name = "crazyAssaultEvent",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.peacefullZryachiyEvent:
+                    return new AIRole()
+                    {
+                        Name = "peacefullZryachiyEvent",
+                        Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.sectactPriestEvent:
+                    return new AIRole()
+                    {
+                        Name = "sectactPriestEvent",
+                        Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.ravangeZryachiyEvent:
+                    return new AIRole()
+                    {
+                        Name = "ravangeZryachiyEvent",
+                        Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.followerBoarClose1:
+                    return new AIRole()
+                    {
+                        Name = "followerBoarClose1",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.followerBoarClose2:
+                    return new AIRole()
+                    {
+                        Name = "followerBoarClose2",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.bossKolontay:
+                    return new AIRole()
+                    {
+                        Name = "bossKolontay",
+                        Type = PlayerType.AIBoss
+                    };
+                case WildSpawnType.followerKolontayAssault:
+                    return new AIRole()
+                    {
+                        Name = "followerKolontayAssault",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.followerKolontaySecurity:
+                    return new AIRole()
+                    {
+                        Name = "followerKolontaySecurity",
+                        Type = PlayerType.AIRaider
+                    };
+                case WildSpawnType.shooterBTR:
+                    return new AIRole()
+                    {
+                        Name = "shooterBTR",
+                        Type = PlayerType.AIRaider
+                    };
                 default:
+                    return new AIRole()
+                    {
+                        Name = "uknown",
+                        Type = PlayerType.AIScav
+                    };
+                    Program.Log("Uknown player " + type);
                     throw new ArgumentOutOfRangeException();
             }
         }

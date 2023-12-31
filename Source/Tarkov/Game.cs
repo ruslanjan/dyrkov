@@ -241,6 +241,7 @@ namespace eft_dma_radar
                 _localGameWorld = Memory.ReadPtrChain(gameWorld, Offsets.GameWorld.To_LocalGameWorld); // Game world >> Local Game World
                 Program.Log($"Found Local GameWorld Object at 0x{_localGameWorld.ToString("X")}");
                 var rgtPlayers = new RegisteredPlayers(Memory.ReadPtr(_localGameWorld + Offsets.LocalGameWorld.RegisteredPlayers));
+                //var rgtPlayers = new RegisteredPlayers(Memory.ReadPtr(_localGameWorld + Offsets.LocalGameWorld.AllAlivePlayers));
                 if (rgtPlayers.PlayerCount > 0) // Make sure not in hideout,etc.
                 {
                     _rgtPlayers = rgtPlayers; // update ref

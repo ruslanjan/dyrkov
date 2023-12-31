@@ -69,9 +69,10 @@ namespace Offsets
     public struct LocalGameWorld // -.ClientLocalGameWorld : ClientGameWorld
     {
         public const uint ExfilController = 0x18; // to ExfilController
-        public const uint LootList = 0x80; // to UnityList
-        public const uint RegisteredPlayers = 0xA0; // to RegisteredPlayers
-        public const uint Grenades = 0x128; // to Grenades
+        public const uint LootList = 0xc8; // to UnityList
+        public const uint RegisteredPlayers = 0xF0; // to RegisteredPlayers
+        public const uint AllAlivePlayers = 0x108; // to AllAlivePlayers
+        public const uint Grenades = 0x1A0; // to Grenades
     }
 
     public struct ThermalVision
@@ -131,15 +132,34 @@ namespace Offsets
         public const uint PlayerBody = 0xA8;
 
         public const uint MovementContext = 0x40; // to MovementContext
-        public const uint Corpse = 0x350; // EFT.Interactive.Corpse
-        public const uint Profile = 0x520; // to Profile
-        public const uint HealthController = 0x558; // to HealthController
+        public const uint Corpse = 0x390; // EFT.Interactive.Corpse
+        public const uint Profile = 0x588; // to Profile
+        public const uint HealthController = 0x5c8; // to HealthController
         public const uint InventoryController = 0x568; // to InventoryController
-        public const uint Physical = 0x530;
+        public const uint Physical = 0x598;
         public const uint ProceduralWeaponAnimation = 0x1A0;
-        public const uint IsLocalPlayer = 0x837; // bool
+        public const uint IsLocalPlayer = 0x906; // bool
     }
+    public struct ObservedPlayerView {
+        public static readonly uint[] To_TransformInternal = new uint[] {
+            0x60, // EFT.PlayerBody
+            0x28, // SkeletonRootJoint : Diz.Skinning.Skeleton
+            0x28, // System.Collections.Generic.List<Transform>
+            Offsets.UnityList.Base,
+            Offsets.UnityListBase.Start + (0 * 0x8),
+            0x10 }; // to TransformInternal
+        public static readonly uint[] bone_matrix = new uint[]
+        {
+            0x60, 0x28, 0x28, Offsets.UnityList.Base
+        };
 
+        public static readonly uint[] Player = new uint[]
+        {
+            0x30, 0x10
+        };
+        public static readonly uint Id = 0x40;
+        public static readonly uint Nickname = 0x48;
+    }
     public struct PlayerBody
     {
         public const uint SlotViews = 0x50;
@@ -163,8 +183,8 @@ namespace Offsets
     {
         public const uint Breath = 0x28;
         public const uint Shooting = 0x48;
-        public const uint Mask = 0x118;
-        public const uint FirearmController = 0x98;
+        public const uint Mask = 0x138;
+        public const uint FirearmController = 0xA8;
     }
     public struct Breath
     {

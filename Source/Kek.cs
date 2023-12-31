@@ -252,7 +252,8 @@ namespace eft_dma_radar.Source
             if (IsKeyPushedDown(Keys.F4) && inputMask[i])
             {
                 inputMask[i] = false;
-                LocalPlayer.ToggleMaxStamina(); LocalPlayer.noRecoil = !LocalPlayer.noRecoil;
+                // LocalPlayer.ToggleMaxStamina();
+                LocalPlayer.noRecoil = !LocalPlayer.noRecoil;
             }
             else if (!IsKeyPushedDown(Keys.F4) && !inputMask[i]) inputMask[i] = true;
 
@@ -706,7 +707,7 @@ namespace eft_dma_radar.Source
             path.MoveTo(headScreen.X, headScreen.Y);
             path.LineTo(spineScreen.X, spineScreen.Y);
             path.LineTo(pelvisScreen.X, pelvisScreen.Y);
-
+            
             path.MoveTo(bonesScreen[Player.bones.HumanLUpperarm].X, bonesScreen[Player.bones.HumanLUpperarm].Y);
             path.LineTo(bonesScreen[Player.bones.HumanLForearm1].X, bonesScreen[Player.bones.HumanLForearm1].Y);
             path.LineTo(bonesScreen[Player.bones.HumanLPalm].X, bonesScreen[Player.bones.HumanLPalm].Y);
@@ -722,6 +723,7 @@ namespace eft_dma_radar.Source
             path.MoveTo(pelvisScreen.X, pelvisScreen.Y);
             path.LineTo(bonesScreen[Player.bones.HumanRCalf].X, bonesScreen[Player.bones.HumanRCalf].Y);
             path.LineTo(bonesScreen[Player.bones.HumanRFoot].X, bonesScreen[Player.bones.HumanRFoot].Y);
+
 
 
             canvas.DrawPath(path, paint);

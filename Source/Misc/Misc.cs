@@ -822,149 +822,180 @@ namespace eft_dma_radar
         /// <summary>
         /// Sniper Scav.
         /// </summary>
-        marksman = 1,
+        marksman = 0,
 
         /// <summary>
         /// Regular Scav.
         /// </summary>
-        assault = 2,
+        assault = 0x1,
 
         /// <summary>
         /// ???
         /// </summary>
-        bossTest = 4,
+        bossTest = 0x2,
 
         /// <summary>
         /// Reshala
         /// </summary>
-        bossBully = 8,
+        bossBully = 0x3,
 
         /// <summary>
         /// ???
         /// </summary>
-        followerTest = 16,
+        followerTest = 0x4,
 
         /// <summary>
         /// Reshala Guard.
         /// </summary>
-        followerBully = 32,
+        followerBully = 0x5,
 
         /// <summary>
         /// Killa
         /// </summary>
-        bossKilla = 64,
+        bossKilla = 0x6,
 
         /// <summary>
         /// Shturman
         /// </summary>
-        bossKojaniy = 128,
+        bossKojaniy = 0x7,
 
         /// <summary>
         /// Shturman Guard.
         /// </summary>
-        followerKojaniy = 256,
+        followerKojaniy = 0x8,
 
         /// <summary>
         /// AI Raider
         /// </summary>
-        pmcBot = 512,
+        pmcBot = 0x9,
 
         /// <summary>
         /// Normal Scav (cursed)
         /// </summary>
-        cursedAssault = 1024,
+        cursedAssault = 0xA,
 
         /// <summary>
         /// Gluhar
         /// </summary>
-        bossGluhar = 2048,
+        bossGluhar = 0xB,
 
         /// <summary>
         /// Gluhar Guard (Assault)
         /// </summary>
-        followerGluharAssault = 4096,
+        followerGluharAssault = 0xC,
 
         /// <summary>
         /// Gluhar Guard (Security)
         /// </summary>
-        followerGluharSecurity = 8192,
+        followerGluharSecurity = 0xD,
 
         /// <summary>
         /// Gluhar Guard (Scout)
         /// </summary>
-        followerGluharScout = 16384,
+        followerGluharScout = 0xE,
 
         /// <summary>
         /// Gluhar Guard (Sniper)
         /// </summary>
-        followerGluharSnipe = 32768,
+        followerGluharSnipe = 0xF,
 
         /// <summary>
         /// Sanitar Guard
         /// </summary>
-        followerSanitar = 65536,
+        followerSanitar = 0x10,
 
         /// <summary>
         /// Sanitar
         /// </summary>
-        bossSanitar = 131072,
+        bossSanitar = 0x11,
 
         /// <summary>
         /// ???
         /// </summary>
-        test = 262144,
+        test = 0x12,
 
         /// <summary>
         /// ???
         /// </summary>
-        assaultGroup = 524288,
+        assaultGroup = 0x13,
 
         /// <summary>
         /// Cultist
         /// </summary>
-        sectantWarrior = 1048576,
+        sectantWarrior = 0x14,
 
         /// <summary>
         /// Cultist Priest (Boss)
         /// </summary>
-        sectantPriest = 2097152,
+        sectantPriest = 0x15,
 
         /// <summary>
         /// Tagilla
         /// </summary>
-        bossTagilla = 4194304,
+        bossTagilla = 0x16,
 
         /// <summary>
         /// Tagilla Guard?
         /// </summary>
-        followerTagilla = 8388608,
+        followerTagilla = 0x17,
 
         /// <summary>
         /// USEC Rogues
         /// </summary>
-        exUsec = 16777216,
+        exUsec = 0x18,
 
         /// <summary>
         /// Santa
         /// </summary>
-        gifter = 33554432,
+        gifter = 0x19,
 
         /// <summary>
         /// Santa
         /// </summary>
-        bossKnight = 67108864,
+        bossKnight = 0x1A,
         /// <summary>
         /// Santa
         /// </summary>
-        followerBigPipe = 134217728,
+        followerBigPipe = 0x1B,
         /// <summary>
         /// Santa
         /// </summary>
-        followerBirdEye = 268435456,
+        followerBirdEye = 0x1C,
 
-        bossZryachiy = 536870912,
+        bossZryachiy = 0x1D,
 
-        followerZryachiy = 1073741824
+        followerZryachiy = 0x1E,
+
+        bossBoar = 32,
+
+        followerBoar = 0x21,
+
+        arenaFighter = 0x22,
+
+        arenaFighterEvent = 0x23,
+
+        bossBoarSniper = 0x24,
+
+        crazyAssaultEvent = 0x25,
+
+        peacefullZryachiyEvent = 0x26,
+
+        sectactPriestEvent = 0x27,
+
+        ravangeZryachiyEvent = 0x28,
+
+        followerBoarClose1 = 0x29,
+
+        followerBoarClose2 = 0x2A,
+
+        bossKolontay = 0x2B,
+
+        followerKolontayAssault = 0x2C,
+
+        followerKolontaySecurity = 0x2D,
+
+        shooterBTR = 0x2E
+
     };
 
     [Flags]
