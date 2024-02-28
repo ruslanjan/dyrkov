@@ -1,10 +1,13 @@
-﻿using SkiaSharp;
+﻿using EasyHook;
+using Gma.System.MouseKeyHook;
+using SkiaSharp;
 using SkiaSharp.Views.Desktop;
 using System.Collections.ObjectModel;
 using System.Data;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using static eft_dma_radar.Source.Kek;
 using Timer = System.Windows.Forms.Timer;
 
 namespace eft_dma_radar.Source
@@ -184,16 +187,24 @@ namespace eft_dma_radar.Source
         [DllImport("user32.dll")]
         static extern bool SetLayeredWindowAttributes(IntPtr hwnd, uint crKey, byte bAlpha, uint dwFlags);
 
+        [DllImport("user32.dll")]
+        static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+
+
         public const int GWL_EXSTYLE = -20;
         public const int WS_EX_LAYERED = 0x80000;
         public const int LWA_ALPHA = 0x2;
         public const int LWA_COLORKEY = 0x1;
+
+        
 
 
         async private void Kek_Shown(object sender, EventArgs e)
         {
             long initialStyle = GetWindowLongA(this.Handle, -20);
             SetWindowLongA(this.Handle, -20, initialStyle | WS_EX_LAYERED | 0x20L | 0x08000000L);
+            //SetWindowDisplayAffinity(this.Handle, 0x00000011);
+
             handle = FindWindow(null, WINDOW_NAME);
 
             MARGINS marg = new MARGINS() { Left = 0, Right = 0, Top = 2560, Bottom = 1440 };
@@ -237,6 +248,7 @@ namespace eft_dma_radar.Source
             {
                 inputMask[i] = false;
                 Memory.Game.FPSCamera.ToggleThermalVision();
+                //Memory.Game.OpticCamera.ToggleThermalVision();
             }
             else if (!IsKeyPushedDown(Keys.F2) && !inputMask[i]) inputMask[i] = true;
 
@@ -284,12 +296,12 @@ namespace eft_dma_radar.Source
             else if (!IsKeyPushedDown(Keys.F5) && !inputMask[i]) inputMask[i] = true;
 
             i = 5;
-            if (IsKeyPushedDown(Keys.Z))
+            if (IsKeyPushedDown(Keys.XButton1))
             {
                 if (LocalPlayer is not null)
                     LocalPlayer.kekBotOn = true;
             }
-            else if (!IsKeyPushedDown(Keys.Z))
+            else if (!IsKeyPushedDown(Keys.XButton1))
             {
                 if (LocalPlayer is not null)
                     LocalPlayer.kekBotOn = false;
@@ -304,6 +316,17 @@ namespace eft_dma_radar.Source
                     LocalPlayer.kekBotBoneIdx++;
             }
             else if (!IsKeyPushedDown(Keys.H) && !inputMask[i]) inputMask[i] = true;
+
+            if (IsKeyPushedDown(Keys.F6))
+            {
+                //Memory.Game.InGame = false;
+                Memory.Game.UpdateRegPlayers();
+            }
+            if (IsKeyPushedDown(Keys.F7))
+            {
+                //LocalPlayer.toggleLootWalls();
+                Memory.Game.InGame = false;
+            }
         }
 
 
@@ -385,7 +408,7 @@ namespace eft_dma_radar.Source
                                     {
                                         if (player.Type == PlayerType.LocalPlayer)
                                         {
-                                           continue; // don't draw self
+                                            continue; // don't draw self
                                         }
                                         this.DrawPlayerKek(canvas, player, view_matrix, sourcePlayer);
                                     }
@@ -398,6 +421,7 @@ namespace eft_dma_radar.Source
                         {
                             this.DrawGrenades(canvas, Memory.Grenades, view_matrix, sourcePlayer);
                         }
+                        this.DrawRadar(canvas, AllPlayers.Select(p => p.Value));
                     }
                     catch { }
                 }
@@ -405,6 +429,82 @@ namespace eft_dma_radar.Source
             catch { }
             if (Memory.InGame && Memory.Players != null)
                 this.drawCrosshair(canvas);
+        }
+
+        public static float Dot(Vector2 a, Vector2 b)
+        {
+            return a.X * b.X + a.Y * b.Y;
+        }
+
+        public static Vector2 Project(Vector2 vector, Vector2 axis)
+        {
+            axis = Vector2.Normalize(axis);
+            float dotProduct = Dot(vector, axis);
+            return axis * dotProduct;
+        }
+
+        public static Vector2 MirrorVector(Vector2 vector, Vector2 axis)
+        {
+            Vector2 projection = Project(vector, axis);
+            return vector - 2 * projection;
+        }
+
+        private void DrawRadar(SKCanvas canvas, IEnumerable<Player>? players)
+        {
+            Vector2 lpos = new Vector2 (LocalPlayer.Position.X, LocalPlayer.Position.Y);
+            var h = 250;
+            var w = 250;
+            var x = this.Width - w; var y = 0;
+            canvas.DrawRect(x, y, w, h, SKPaints.RadarBG);
+            var center = new Vector2 (w/2, h/2);
+            if (players is not null)
+            {
+                foreach (var player in players)
+                {
+                    try
+                    {
+                        var pos = new Vector2(player.Position.X, player.Position.Y) - lpos;
+                        pos /= 2;
+                        //var r = 0;
+                        //var nPos = new Vector2(pos.X * (float)Math.Cos(r) - pos.Y * (float)Math.Sin(r),
+                        //    pos.X * (float)Math.Sin(r) + pos.Y * (float)Math.Cos(r));
+                        //pos = nPos;
+
+
+                        var radians = -LocalPlayer.Rotation.X.ToRadians() - Math.PI/2;
+                        var aimlineLength = 32;
+
+                        //pos.X = w - pos.X;
+                        if (player.Type == PlayerType.LocalPlayer)
+                        {
+                            pos = pos + center;
+                            canvas.DrawCircle(pos.X + x, pos.Y + y, 5, SKPaints.PaintTeammate);
+                            //radians = player.Rotation.X.ToRadians();
+                            //Program.Log($"{radians}");
+                            //canvas.DrawLine(new SKPoint(pos.X + x, pos.Y + y), new SKPoint((float)(pos.X + Math.Cos(radians) * aimlineLength) + x, (float)(pos.Y + Math.Sin(radians) * aimlineLength)), SKPaints.PaintTeammate);
+                            canvas.DrawLine(new SKPoint(pos.X + x, pos.Y + y), new SKPoint((float)(pos.X) + x, (float)(pos.Y - aimlineLength)), SKPaints.PaintTeammate);
+                            continue; // don't draw self
+                        }
+                        var axis = new Vector2(0, 1);
+                        pos = MirrorVector(pos, axis);
+
+                        //pos = new Vector2(-pos.X, pos.Y);
+
+                        var rPos = new Vector2(pos.X * (float)Math.Cos(radians) - pos.Y * (float)Math.Sin(radians),
+                            pos.X * (float)Math.Sin(radians) + pos.Y * (float)Math.Cos(radians));
+                        pos = rPos + center;
+                        if (pos.X < 0 || pos.X > w || pos.Y < 0 || pos.Y > h)
+                            continue;
+                        if (!player.IsAlive || !player.IsActive)
+                            continue;
+                        canvas.DrawCircle(pos.X + x, pos.Y + y, 3, player.GetPaint());
+                        radians = player.Rotation.X.ToRadians() + radians;
+                        aimlineLength = 12;
+                        canvas.DrawLine(new SKPoint(pos.X + x, pos.Y + y), new SKPoint((float)(pos.X + Math.Cos(radians) * aimlineLength) + x, (float)(pos.Y + Math.Sin(radians) * aimlineLength)), player.GetPaint());
+                    }
+                    catch { }
+                }
+            }
         }
 
         private void DrawHud(SKCanvas canvas)
@@ -486,6 +586,7 @@ namespace eft_dma_radar.Source
                         continue;
                     }
                 }
+                if (dist > 200f) { continue; }
                 Vector2 pos;
                 if (!w2s(view_matrix, new Vector3(itemPos.X, itemPos.Z, itemPos.Y), out pos))
                 {
@@ -589,10 +690,6 @@ namespace eft_dma_radar.Source
             SKPaint text = player.GetKekText(dist);
 
             if (player.Type == PlayerType.LocalPlayer) return; // don't draw self
-            var headPos = player.getBonePose(Player.bones.HumanHead);
-            var spinePos = player.getBonePose(Player.bones.HumanSpine3);
-            var pelvisPos = player.getBonePose(Player.bones.HumanPelvis);
-            
             var visible = dist < _config.MaxKekDistance;
 
             //var bone_matrix = Memory.ReadPtrChain(player.Base, Offsets.Player.bone_matrix);
@@ -608,8 +705,18 @@ namespace eft_dma_radar.Source
             {
                 return;
             }
-            var health = player.IsAlive ? player.Health : 0; 
+            var health = player.IsAlive || player.IsActive ? player.Health : 0;
+            if (visible && sourcePlayer.kekBotOn)
+            {
+                var LineHeight = 16;
+                canvas.DrawRect(pos.X, pos.Y - 10, LineHeight * (player.Name.Length), 16, SKPaints.DarkTextbg);
+            }
             canvas.DrawText($"{player.Name} {health} {(int)dist}", pos.X, pos.Y, text);
+            
+            var headPos = player.getBonePose(Player.bones.HumanHead);
+            var spinePos = player.getBonePose(Player.bones.HumanSpine3);
+            var pelvisPos = player.getBonePose(Player.bones.HumanPelvis);
+
             var wep = "";
             if (false && player.Gear is not null) // Get weapon info via GearManager
             {
@@ -627,7 +734,7 @@ namespace eft_dma_radar.Source
             var side = player.isUsec ? "Usec:" : "";
             if (side == "")
                 side = player.isBear ? "Bear:" : "";
-            canvas.DrawText($"{side}{wep}", pos.X, pos.Y + 14, text);
+            //canvas.DrawText($"{side}{wep}", pos.X, pos.Y + 14, text);
             if (!player.IsActive || !player.IsAlive)
                 return;
 

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using eft_dma_radar.Source.Misc.MonoSharp;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -25,6 +26,7 @@ namespace eft_dma_radar
         private static uint _pid;
         private static MAP_MODULEENTRY _unityPlayerModule;
         private static ulong _unityBase;
+        private static ulong _monoBase;
         private static Vmm vmm;
         private static Game _game;
         private static int _ticksCounter = 0;
@@ -152,9 +154,15 @@ namespace eft_dma_radar
             }
         }
 
+        public static ulong GetMonoModule()
+        {
+            return _monoBase;
+        }
+
         /// <summary>
         /// Gets module base entry address for UnityPlayer.dll
         /// </summary>
+        /// 
         private static bool GetModuleBase()
         {
             try
@@ -162,6 +170,8 @@ namespace eft_dma_radar
                 ThrowIfDMAShutdown();
                 _unityPlayerModule = vmm.Map_GetModuleFromName(_pid, "UnityPlayer.dll");
                 _unityBase = vmm.ProcessGetModuleBase(_pid, "UnityPlayer.dll");
+                _monoBase = vmm.ProcessGetModuleBase(_pid, "mono-2.0-bdwgc.dll");
+                //Mono.InitializeFunctions();
 
                 if (_unityBase == 0) throw new DMAException("Unable to obtain Base Module Address. Game may not be running");
                 else
@@ -214,6 +224,7 @@ namespace eft_dma_radar
                         try
                         {
                             _unityBase = vmm.ProcessGetModuleBase(_pid, "UnityPlayer.dll");
+                            //Program.Log($"HardSettings {(Memory.ReadPtrChain(_unityBase, Offsets.ModuleBase.HardSettigs)).ToString("x")}");
                             if (_unityBase == 0) throw new DMAException("Unable to obtain Base Module Address. Game may not be running");
                             else
                             {

@@ -7,6 +7,7 @@ using System.Text;
 using System.Collections.ObjectModel;
 using eft_dma_radar.Source.Tarkov;
 using eft_dma_radar.Source;
+using System.Runtime.InteropServices;
 
 namespace eft_dma_radar
 {
@@ -129,12 +130,16 @@ namespace eft_dma_radar
 
         #endregion
 
+        [DllImport("user32.dll")]
+        static extern bool SetWindowDisplayAffinity(IntPtr hWnd, uint dwAffinity);
+
         #region Events
         /// <summary>
         /// Event fires when MainForm becomes visible. Loops endlessly but is asynchronously non-blocking.
         /// </summary>
         private async void MainForm_Shown(object sender, EventArgs e)
         {
+            //SetWindowDisplayAffinity(this.Handle, 0x00000011);
             while (_mapCanvas.GRContext is null) await Task.Delay(1);
             _mapCanvas.GRContext.SetResourceCacheLimit(503316480); // Fixes low FPS on big maps
             while (true)

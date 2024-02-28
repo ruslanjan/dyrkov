@@ -32,10 +32,12 @@ namespace eft_dma_radar
         private volatile bool _inGame = false;
         private volatile bool _loadingLoot = false;
         private volatile bool _refreshLoot = false;
+        private volatile bool _refreshPlayers = false;
         #region Getters
         public bool InGame
         {
             get => _inGame;
+            set => _inGame = value;
         }
         public bool LoadingLoot
         {
@@ -49,6 +51,8 @@ namespace eft_dma_radar
         {
             get => _rgtPlayers?.Players.Where(p => p.Value.Type == PlayerType.LocalPlayer).First().Value;
         }
+
+        public OpticCamera OpticCamera => _opticCamera;
 
         private object viewMatrixLock = new object();
         private Matrix4x4 _viewMatrix;
@@ -122,6 +126,14 @@ namespace eft_dma_radar
         {
             try
             {
+                if (_refreshPlayers)
+                {
+                    _refreshPlayers = false;
+                    var rgtPlayers = new RegisteredPlayers(Memory.ReadPtr(_localGameWorld + Offsets.LocalGameWorld.RegisteredPlayers));
+                    rgtPlayers.UpdateList(); // Check for new players, add to list
+                    _rgtPlayers = rgtPlayers;
+                    Thread.Sleep(1000);
+                }
                 _rgtPlayers.UpdateList(); // Check for new players, add to list
                 _rgtPlayers.UpdateAllPlayers(); // Update all player locations,etc.
                 ViewMatrix = FPSCamera.GetViewMatrix();
@@ -259,6 +271,15 @@ namespace eft_dma_radar
                 Program.Log($"ERROR getting Local Game World: {ex}");
                 return false;
             }
+        }
+
+        public void UpdateRegPlayers()
+        {
+            _refreshPlayers = true;
+            /*foreach (var player in _rgtPlayers.Players)
+            {
+                player.Value.SetPosition(null);
+            }*/
         }
         
         public ulong GetComponent(ulong obj, string s)

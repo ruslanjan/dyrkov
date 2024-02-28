@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Collections.Concurrent;
+using System.Collections.Concurrent;    
 using System.Collections.ObjectModel;
 using static eft_dma_radar.Source.Kek;
 using System.Runtime.InteropServices;
@@ -9,6 +9,8 @@ using System.Windows.Forms;
 using eft_dma_radar.Source;
 using Offsets;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Tab;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace eft_dma_radar
 {
@@ -47,7 +49,7 @@ namespace eft_dma_radar
         private readonly object _posLock = new(); // sync access to this.Position (non-atomic)
         private readonly GearManager _gearManager;
         private Transform _transform;
-        private Dictionary<bones, Transform> _bonesTransforms = new();
+        public Dictionary<bones, Transform> _bonesTransforms = new();
 
         #region PlayerProperties
         /// <summary>
@@ -101,6 +103,7 @@ namespace eft_dma_radar
         // Bones poses
         private readonly object _bposLock = new(); // sync access to this.Position (non-atomic)
         private Dictionary<bones, Vector3> _bpos = new(); // backing field
+        private Dictionary<bones, Vector3> _lastBpos = new(); // backing field
         /// <summary>
         /// Player's Unity Position in Local Game World.
         /// </summary>
@@ -122,7 +125,8 @@ namespace eft_dma_radar
             }
         }
 
-        
+
+
         public bool IsAiming = false;
         public bool IsScope = false;
 
@@ -131,6 +135,14 @@ namespace eft_dma_radar
             lock (_bposLock)
             {
                 return _bpos[b];
+            }
+        }
+
+        public Vector3 getLastBonePose(bones b)
+        {
+            lock (_bposLock)
+            {
+                return _lastBpos[b];
             }
         }
 
@@ -360,7 +372,11 @@ namespace eft_dma_radar
         {
             try
             {
-                var Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
+                ulong Body;
+                if (!IsObserved)
+                    Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
+                else
+                    Body = Memory.ReadPtr(Base + Offsets.ObservedPlayerView.PlayerBody);
                 var slotViews = Memory.ReadPtr(Body + Offsets.PlayerBody.SlotViews);
                 var slotViewsList = Memory.ReadPtr(slotViews + 0x18);
                 var iList = Memory.ReadPtr(slotViewsList + Offsets.UnityList.Base);
@@ -397,8 +413,12 @@ namespace eft_dma_radar
         {
             try
             {
-                var Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
-                var pSkinsDict = Memory.ReadPtr(Body + 0x38);
+                ulong Body;
+                if (!IsObserved)
+                    Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
+                else
+                    Body = Memory.ReadPtr(Base + Offsets.ObservedPlayerView.PlayerBody);
+                var pSkinsDict = Memory.ReadPtr(Body + 0x40);
                 var SkinsCount = Memory.ReadValue<int>(pSkinsDict + 0x40);
 
                 if (SkinsCount <= 0 || SkinsCount > 10000)
@@ -421,6 +441,8 @@ namespace eft_dma_radar
                         var pLodEntry = Memory.ReadPtr(pLodsArray + 0x20 + (j * 0x8));
                         if (pLodEntry == 0x0)
                             continue;
+                        if (j == 1)
+                            pLodEntry = Memory.ReadPtr(pLodEntry + 0x20);
 
                         var SkinnedMeshRenderer = Memory.ReadValue<ulong>(pLodEntry + 0x20);
                         if (SkinnedMeshRenderer == 0x0)
@@ -431,17 +453,41 @@ namespace eft_dma_radar
                             continue;
 
                         var MaterialCount = Memory.ReadValue<int>(pMaterialDictionary + 0x158);
-                        if (MaterialCount < 0) continue;
+                        if (MaterialCount < 0 && MaterialCount < 10)
+                        {
+                            ulong MaterialDictionaryBase = Memory.ReadValue<ulong>(pMaterialDictionary + 0x148);
+
+                            for (int k = 0; k < MaterialCount; k++)
+                                Memory.Write(MaterialDictionaryBase + ((ulong)k * 0x50), BitConverter.GetBytes(0x0L));
+                        }
                         if (MaterialCount > 10)
                         {
-                            SkinnedMeshRenderer = Memory.ReadValue<ulong>(SkinnedMeshRenderer + 0x20);
+                            /*SkinnedMeshRenderer = Memory.ReadValue<ulong>(SkinnedMeshRenderer + 0x20);
                             if (SkinnedMeshRenderer == 0x0)
                                 continue;
                             pMaterialDictionary = Memory.ReadValue<ulong>(SkinnedMeshRenderer + 0x10);
                             if (pMaterialDictionary == 0x0)
+                                continue;*/
+                            var lod_entry = Memory.ReadValue<ulong>(pLodsArray + 0x20 + (j * 0x8));
+                            if (lod_entry == 0)
                                 continue;
+
+                            var skinned_mesh_renderer = Memory.ReadValue<ulong>(Memory.ReadValue<ulong>(lod_entry + 0x20) + 0x20);
+                            if (skinned_mesh_renderer == 0)
+                                continue;
+
+                            var material_dict = Memory.ReadValue<ulong>(skinned_mesh_renderer + 0x10);
+                            if (material_dict == 0)
+                                continue;
+
+                            var material_count = Memory.ReadValue<int>(material_dict + 0x158);
+                            var material_dirbase = Memory.ReadValue<ulong>(material_dict + 0x148);
+                            for (int k = 0; k < material_count; k++)
+                            {
+                                if (Memory.ReadValue<ulong>(material_dirbase + ((ulong)k * 0x4)) != 0)
+                                    Memory.Write(material_dirbase + ((ulong)k * 0x4), BitConverter.GetBytes(0x0L));
+                            }
                         }
-                        NullMaterials(pMaterialDictionary);
                     }
                 }
             }
@@ -496,6 +542,9 @@ namespace eft_dma_radar
                         HealthEntries[i] = Memory.ReadPtrChain(healthEntriesList, new uint[] { 0x30 + (i * 0x18), Offsets.HealthEntry.Value });
                     }
                     MovementContext = Memory.ReadPtr(playerBase + Offsets.Player.MovementContext);
+                } else
+                {
+                    MovementContext = Memory.ReadPtrChain(playerBase, Offsets.ObservedPlayerView.MovementContext);
                 }
                 ulong bone_matrix;
                 if (!isObserved)
@@ -505,7 +554,7 @@ namespace eft_dma_radar
                 foreach (var b in TargetBones)
                 {
                     bonesTransforms[b] = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)b) * 0x8)) + 0x10);
-                    _bonesTransforms[b] = new Transform(bonesTransforms[b]);
+                    _bonesTransforms[b] = new Transform(bonesTransforms[b], false);
                 }
 
                 if (!isObserved)
@@ -517,10 +566,13 @@ namespace eft_dma_radar
                 {
                     TransformInternal = Memory.ReadPtrChain(playerBase, Offsets.ObservedPlayerView.To_TransformInternal);
                     _transform = new Transform(TransformInternal, true);
+                    
                 }
                 
                 var isLocalPlayer = !isObserved && Memory.ReadValue<bool>(playerBase + Offsets.Player.IsLocalPlayer);
                 int playerSide;
+                string name = "ERR";
+                bool isAI = false;
                 if (!isObserved)
                 {
                     playerSide = Memory.ReadValue<int>(Info + Offsets.PlayerInfo.PlayerSide); // Scav, PMC, etc.
@@ -529,8 +581,28 @@ namespace eft_dma_radar
                     isBear = playerSide == 0x2;
                 } else
                 {
-                    playerSide = 0x1;
-                    IsPmc = true;
+                    var namePtr = Memory.ReadPtr(Base + Offsets.ObservedPlayerView.Nickname);
+                    name = Memory.ReadUnityString(namePtr);
+                    isAI = Memory.ReadValue<bool>(Base + Offsets.ObservedPlayerView.isAI); ; // AI
+                    playerSide = Memory.ReadValue<int>(Base + Offsets.ObservedPlayerView.side);
+                    IsPmc = playerSide == 0x1 || playerSide == 0x2;
+                    isUsec = playerSide == 0x1;
+                    isBear = playerSide == 0x2;
+                    /*if (isAI)
+                        playerSide = 0x4;
+                    else
+                    {
+                        playerSide = 0x1;
+                        if (Regex.IsMatch(name, @"\p{IsCyrillic}"))
+                        {
+                            playerSide = 0x4;
+                        } 
+                        else
+                        {
+                            playerSide = 0x1;
+                            IsPmc = true;
+                        }
+                    }*/
                 }
                 if (isLocalPlayer)
                 {
@@ -553,27 +625,38 @@ namespace eft_dma_radar
                 {
                     if (playerSide == 0x4) // scav
                     {
-                        var regDate = Memory.ReadValue<int>(Info + Offsets.PlayerInfo.RegDate); // Bots wont have 'reg date'
-                        if (regDate == 0) // AI SCAV
+                        if (isObserved)
                         {
-                            var settings = Memory.ReadPtr(Info + Offsets.PlayerInfo.Settings);
-                            var roleFlag = (WildSpawnType)Memory.ReadValue<int>(settings + Offsets.PlayerSettings.Role);
-                            var role = roleFlag.GetRole();
-                            //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
-                            Name = role.Name;
-                            Type = role.Type;
-                        }
-                        else // PLAYER SCAV
-                        {
-                            Type = PlayerType.PScav;
-                            //try { _gearManager = new GearManager(playerBase, false); } catch { } // Don't fail allocation - low prio
-                            //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
-                            GroupID = GetGroupID();
-                            Lvl = GetPlayerLevel();
-                            Category = GetMemberCategory();
-                            var namePtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.MainProfileNickname); // Get Player Scav's PMC Profile Nickname
-                            Name = Memory.ReadUnityString(namePtr);
+                            Name = name;
                             AccountID = GetAccountID();
+                            if (isAI)
+                                Type = PlayerType.AIScav;
+                            else
+                                Type = PlayerType.PScav;
+                        } else
+                        {
+                            var regDate = Memory.ReadValue<int>(Info + Offsets.PlayerInfo.RegDate); // Bots wont have 'reg date'
+                            if (regDate == 0) // AI SCAV
+                            {
+                                var settings = Memory.ReadPtr(Info + Offsets.PlayerInfo.Settings);
+                                var roleFlag = (WildSpawnType)Memory.ReadValue<int>(settings + Offsets.PlayerSettings.Role);
+                                var role = roleFlag.GetRole();
+                                //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
+                                Name = role.Name;
+                                Type = role.Type;
+                            }
+                            else // PLAYER SCAV
+                            {
+                                Type = PlayerType.PScav;
+                                //try { _gearManager = new GearManager(playerBase, false); } catch { } // Don't fail allocation - low prio
+                                //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
+                                GroupID = GetGroupID();
+                                Lvl = GetPlayerLevel();
+                                Category = GetMemberCategory();
+                                var namePtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.MainProfileNickname); // Get Player Scav's PMC Profile Nickname
+                                Name = Memory.ReadUnityString(namePtr);
+                                AccountID = GetAccountID();
+                            }
                         }
                     }
                     else if (IsPmc) // 0x1 0x2 usec/bear
@@ -592,6 +675,7 @@ namespace eft_dma_radar
                             var namePtr = Memory.ReadPtr(Base + Offsets.ObservedPlayerView.Nickname);
                             Name = Memory.ReadUnityString(namePtr);
                             AccountID = GetAccountID();
+                            //GroupID = Memory.ReadUnityString(namePtr);
                             for (int i = 0; i < Extensions.Friends.Length; ++i)
                             {
                                 if (Name == Extensions.Friends[i])
@@ -605,6 +689,7 @@ namespace eft_dma_radar
 
                     }
                     else throw new ArgumentOutOfRangeException("playerSide");
+                    updateMisc();
                 }
                 FinishAlloc(); // Finish allocation (check watchlist, member type,etc.)
             }
@@ -649,6 +734,16 @@ namespace eft_dma_radar
             }
         }
 
+        public bool SetHealth(ulong status)
+        {
+            if (status == 1024) this.Health = 100; //Approximate health percentage
+            else if (status == 2048) this.Health = 75;
+            else if (status == 4096) this.Health = 45;
+            else if (status == 8192) this.Health = 20;
+            else this.Health = 0;
+            return true;
+        }
+
         /// <summary>
         /// Set player rotation (Direction/Pitch)
         /// </summary>
@@ -687,21 +782,41 @@ namespace eft_dma_radar
             {
                 if (obj is null) throw new NullReferenceException();
                 var input = new object[] { obj[0], obj[1] };
+                
                 this.Position = _transform.GetPosition(input);
 
                 var i = 2;
+                var p = true;
+                var count = 0;
                 foreach (var b in TargetBones)
                 {
                     try
                     {
+                        if (_bpos.ContainsKey(b)) 
+                            _lastBpos[b] = _bpos[b];
                         if (obj[i] is not null && obj[i + 1] is not null)
+                        {
                             setBonePose(b, _bonesTransforms[b].GetPosition(new object[] { obj[i], obj[i + 1] }));
+                        }
                         else if (bones.HumanHead == b || visible)
+                        {
+                            //p = false;
+                            count++;
                             setBonePose(b, _bonesTransforms[b].GetPosition());
+                        }
+                        else if (visible)
+                        {
+                            count++;
+                            //p = false;
+                        }
                     } catch { }
                     i += 2;
                 }
-                return true;
+                if (count > TargetBones.Length/2)
+                {
+                    //p = false;
+                }
+                return p;
             }
             catch (Exception ex) // Attempt to re-allocate Transform on error
             {
@@ -722,7 +837,7 @@ namespace eft_dma_radar
                     foreach (var b in TargetBones)
                     {
                         bonesTransforms[b] = Memory.ReadPtr(Memory.ReadPtr(bone_matrix + 0x20 + (((ulong)b) * 0x8)) + 0x10);
-                        _bonesTransforms[b] = new Transform(bonesTransforms[b]);
+                        _bonesTransforms[b] = new Transform(bonesTransforms[b], false);
                     }
                 }
                 catch (Exception ex2)
@@ -914,16 +1029,16 @@ namespace eft_dma_radar
                 var playerBody = Memory.ReadPtr(Base + Offsets.Player.Physical);
                 var stamina = Memory.ReadPtr(playerBody + Offsets.Physical.MaxStamina);
                 // TotalCapacity = { 0x10, 0x1c };
-                Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
-                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(10.0f));
+                //Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
+                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(1.0f));
                 stamina = Memory.ReadPtr(playerBody + Offsets.Physical.MaxOxygen);
                 // TotalCapacity = { 0x10, 0x1c };
-                Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
-                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(10.0f));
+                //Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
+                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(1.0f));
                 stamina = Memory.ReadPtr(playerBody + Offsets.Physical.MaxHandStamina);
                 // TotalCapacity = { 0x10, 0x1c };
-                Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
-                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(10.0f));
+                //Memory.Write(Memory.ReadPtr(stamina + 0x10) + 0x1c, BitConverter.GetBytes(240.0f));
+                Memory.Write(stamina + Offsets.Physical.buff, BitConverter.GetBytes(1.0f));
             }
         }
 
@@ -1059,16 +1174,35 @@ namespace eft_dma_radar
                             Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
                             skill = Memory.ReadPtr(skills + Offsets.Skills.IntellectEliteAmmoCounter);
                             Memory.Write(skill + Offsets.Skills.Value, BitConverter.GetBytes(true));
+
+                            // loot walls
+                            // fovCompensatoryDistance
                         }
 
 
                         this.disableInertia();
+                        //ToggleMaxStamina();
                     }
 
                 } catch (Exception ex)
                 {
                     Program.Log($"NoRecoil {ex}");
                 }
+            }
+        }
+        bool lootWalls = false;
+        public void toggleLootWalls()
+        {
+            var ProceduralWeaponAnimation = Memory.ReadPtrChain(Base, new uint[] { Offsets.Player.ProceduralWeaponAnimation, 0x10, 0x28 });
+            if (!lootWalls)
+            {
+                Memory.Write(ProceduralWeaponAnimation + 0x1F0, BitConverter.GetBytes(2f));
+                lootWalls = true;
+            }
+            else
+            {
+                Memory.Write(ProceduralWeaponAnimation + 0x1F0, BitConverter.GetBytes(0f));
+                lootWalls = false;
             }
         }
 
@@ -1092,7 +1226,7 @@ namespace eft_dma_radar
                 Memory.Write(inertia + Offsets.Inertia.MoveTimeRange, BitConverter.GetBytes(0L));
                 Memory.Write(inertia + Offsets.Inertia.MinDirectionBlendTime, BitConverter.GetBytes(.0f));
 
-                //Memory.Write(inertia + 0x10C, BitConverter.GetBytes(3.0f));
+                Memory.Write(inertia + 0x10C, BitConverter.GetBytes(3.0f));
                 Memory.Write(inertia + 0xA8, BitConverter.GetBytes(9999.0f));
                 
             }
@@ -1154,13 +1288,14 @@ namespace eft_dma_radar
                 {
                     //(myPos.Y, myPos.Z) = (myPos.Z, myPos.Y);
                     
-                    if (_fireportTransform == 0)
+                    if (_fireportTransform == 0 || true)
                     {
                         _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x1A0), new uint[]
                         {
                         0xA8,
                         0xd0,
-                        //0x10,
+                        0x10,
+                        0x10,
                         //0x28,
                         //0x10
                         });
@@ -1176,7 +1311,7 @@ namespace eft_dma_radar
                         return;
                     }
                     var localView = new Vector3(RawRotation.X, RawRotation.Y, 0);
-
+                    
                     var fireportTransForm = new Transform(_fireportTransform);
                     fireportPos = fireportTransForm.GetPosition();
                     
@@ -1198,8 +1333,12 @@ namespace eft_dma_radar
                             var distance = Vector3.Distance(myPos, pPos);
                             //if (Vector3.Distance(myPos, pPos) > 1000) // MAX_RENDER_DISTANCE
                             var headPos = p._bonesTransforms[kekBotBone].GetPosition();
+                            if (_lastBpos.ContainsKey(kekBotBone)  && _lastBpos[kekBotBone] !=  new Vector3(0, 0, 0) && (headPos - _lastBpos[kekBotBone]).Length() < 100)
+                            {
+                                headPos = headPos + (headPos - _lastBpos[kekBotBone])*2;
+                            }
                             (headPos.Y, headPos.Z) = (headPos.Z, headPos.Y);
-                            if (distance < 150f)
+                            if (distance < 250f)
                             {
                                 Vector3 rotationAngle = getAngle(fPos, headPos);
                                 fov = calcFov(new Vector3(localView.X, localView.Y, 0),

@@ -56,7 +56,7 @@ namespace eft_dma_radar
         /// <summary>
         /// Updates the ConcurrentDictionary of 'Players'
         /// </summary>
-        public void UpdateList()
+        public void UpdateList(bool recreate = false)
         {
             if (_regSw.ElapsedMilliseconds < 500) return; // Update every 500ms
             try
@@ -140,7 +140,7 @@ namespace eft_dma_radar
                         //if (id.Length > 2) throw new ArgumentOutOfRangeException("id"); // Ensure valid ID length
                         if (id.Length != 24 && id.Length != 27 && id.Length != 36) throw new ArgumentOutOfRangeException("id"); // Ensure valid ID length
                         registered.Add(id); // ID is registered, cache it
-                        if (_players.TryGetValue(id, out var existingPlayer)) // Player already exists, check for problems
+                        if (_players.TryGetValue(id, out var existingPlayer) && !recreate) // Player already exists, check for problems
                         {
                             if (existingPlayer.ErrorCount > 100) // Erroring out a lot? Re-Alloc
                             {
@@ -157,7 +157,6 @@ namespace eft_dma_radar
                                 existingPlayer.IsActive = true;
                                 existingPlayer.IsAlive = true;
                             }
-                            existingPlayer.updateMisc();
                         }
                         else // Does not exist - allocate new player
                         {
@@ -237,9 +236,11 @@ namespace eft_dma_radar
                 var scatterMap = new ScatterReadMap();
                 var round1 = scatterMap.AddRound();
                 ScatterReadRound round2 = null;
-                if (checkPos) // allocate and add extra rounds to map
+                ScatterReadRound round3 = null;
+                if (checkPos || checkHealth) // allocate and add extra rounds to map
                 {
                     round2 = scatterMap.AddRound();
+                    round3 = scatterMap.AddRound();
                 }
                 for (int i = 0; i < players.Length; i++)
                 {
@@ -250,14 +251,28 @@ namespace eft_dma_radar
                     }
                     else
                     {
-                        if (checkHealth && !player.IsObserved) for (int p = 0; p < 7; p++)
+                        if (checkHealth)
                         {
-                            var health = round1.AddEntry(i, p, player.HealthEntries[p] + Offsets.HealthEntry.Value,
-                                typeof(float), null);
+                            if (!player.IsObserved)
+                                for (int p = 0; p < 7; p++)
+                                {
+                                    var health = round1.AddEntry(i, p, player.HealthEntries[p] + Offsets.HealthEntry.Value,
+                                        typeof(float), null);
+                                }
+                            else
+                            {
+                                var controller = round1.AddEntry(i, 0, player.Base, typeof(ulong), null, Offsets.Player.ToObservedHealthController[0]);
+                                var healthController = round2.AddEntry(i, 1, controller, typeof(ulong), null, Offsets.Player.ToObservedHealthController[1]);
+                                round3.AddEntry(i, 2, healthController, typeof(ulong), null, Offsets.HealthController.HealthStatus);
+                            }
                         }
                         if (!player.IsObserved)
                         {
                             var rotation = round1.AddEntry(i, 7, player.MovementContext + Offsets.MovementContext.Rotation,
+                            typeof(System.Numerics.Vector2), null); // x = dir , y = pitch
+                        } else
+                        {
+                            var rotation = round1.AddEntry(i, 7, player.MovementContext + Offsets.ObservedMovementContext.Rotation,
                             typeof(System.Numerics.Vector2), null); // x = dir , y = pitch
                         }
 
@@ -342,20 +357,30 @@ namespace eft_dma_radar
                             }
                         }
                         bool p1 = true;
-                        if (checkHealth && !player.IsObserved)
+                        if (checkHealth)
                         {
-                            var bodyParts = new object[7];
-                            for (int p = 0; p < 7; p++)
+                            if (!player.IsObserved)
                             {
-                                bodyParts[p] = scatterMap.Results[i][p].Result;
+                                var bodyParts = new object[7];
+                                for (int p = 0; p < 7; p++)
+                                {
+                                    bodyParts[p] = scatterMap.Results[i][p].Result;
+                                }
+                                p1 = player.SetHealth(bodyParts);
+                            } else
+                            {
+                                var status = (ulong)scatterMap.Results[i][2].Result;
+                                player.SetHealth(status);
                             }
-                            p1 = player.SetHealth(bodyParts);
                         }
-                        if (player.MovementContext != 0)
+                        if (!player.IsObserved)
                         {
                             var rotation = scatterMap.Results[i][7].Result;
                             bool p2 = player.SetRotation(rotation);
-
+                        } else
+                        {
+                            var rotation = scatterMap.Results[i][7].Result;
+                            bool p2 = player.SetRotation(rotation);
                         }
                         var posBufs = new List<object>
                         {
@@ -367,6 +392,7 @@ namespace eft_dma_radar
                         {
                             posBufs.Add(scatterMap.Results[i][id].Result);
                             posBufs.Add(scatterMap.Results[i][id + 1].Result);
+                            
                             id += 2;
                         }
                         bool p3 = true;

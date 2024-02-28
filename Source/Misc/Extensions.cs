@@ -113,7 +113,7 @@ namespace eft_dma_radar
 
         public static SKPaint GetKekPaint(this Player player, float dist)
         {
-            var close = dist < 250f;
+            var close = dist < 250f || !player.IsActive || !player.IsAlive;
             switch (player.Type)
             {
                 case PlayerType.LocalPlayer:
@@ -165,7 +165,7 @@ namespace eft_dma_radar
 
         public static SKPaint GetKekText(this Player player, float dist)
         {
-            var close = dist < 250f;
+            var close = dist < 250f && (player.IsActive || !player.IsAlive);
             switch (player.Type)
             {
                 case PlayerType.Teammate:
@@ -243,7 +243,18 @@ namespace eft_dma_radar
             "LordDudets",
             "n0081kk",
             "_DED__",
-            "KYBER_DED"
+            "KYBER_DED",
+            "MaxAttacks",
+            "Baty_deda",
+            "CbIH_DEDA",
+            "Sedoy362",
+            "Svita_Deda",
+            "BRAT_DEDA",
+            "KuPOB",
+            "translitor",
+            "jopa1337",
+            "vladick_",
+            "ToAqu"
         };
 
         public static AIRole GetRole(this WildSpawnType type)

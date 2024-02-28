@@ -34,6 +34,8 @@ namespace eft_dma_radar.Source.Tarkov
                 //mask = Memory.ReadPtr(ThermalVision + Offsets.ThermalVision.material);
                 Memory.Write(ThermalVision + Offsets.ThermalVision.On, new byte[] { 0x1, 0x0, 0x0, 0x0, 0x0, 0x0,  });
                 Memory.Write(ThermalVision + Offsets.ThermalVision.material, BitConverter.GetBytes(0L));
+                
+                //Memory.Write(Memory.ReadPtrChain(ThermalVision, new uint[] { Offsets.ThermalVision.material, 0x10, 0x38}), BitConverter.GetBytes((byte)0xE6));
                 Memory.Write(NightVision + Offsets.NightVision.On, new byte[] { 0x0 });
             }
             if (visionCycle % 3 == 2)

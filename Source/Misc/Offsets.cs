@@ -27,6 +27,7 @@ namespace Offsets
     {
         public const uint GameObjectManager = 0x17FFD28; // to eft_dma_radar.GameObjectManager
         public const uint AllCameras = 0x179F500;
+        public static readonly uint[] HardSettigs = new uint[] { 0x184c2b0, 0x148, 0xb30, 0x4d0, 0x98, 0x0,  }; // to TransformInternal
     }
     public struct GameObject
     {
@@ -43,7 +44,8 @@ namespace Offsets
     {
         // MainApplication(Parent ClientApplication) -> _backEnd -> \uE00B (class214_0) -> BackEndConfig -> Config -> Inertia.
         public static readonly uint[] ToConfig = new uint[] {
-            0x28, 0x48, 0xA8, 0x10
+            //0x28, 0x48, 0xA8, 0x10
+            0x28, 0x58, 0xc0, 0x10, 
             /* 0x28, // _backEnd // class213
             0x48, // class214_0 0x58
             0x138,//0x110, // BackendConfigClass \uE510
@@ -53,7 +55,7 @@ namespace Offsets
 
     public struct Config
     {
-        public const uint Inertia = 0xD0; // \uE02B
+        public const uint Inertia = 0xD8; // \uE02B
     }
 
     public struct Inertia
@@ -88,7 +90,7 @@ namespace Offsets
 
     public struct NightVision
     {
-        public const uint On = 0xE4;
+        public const uint On = 0xEC;
         public const uint IsNoisy = 0xe1;
         public const uint IsFpsStuck = 0xe2;
         public const uint IsMotionBlurred = 0xe3;
@@ -135,6 +137,10 @@ namespace Offsets
         public const uint Corpse = 0x390; // EFT.Interactive.Corpse
         public const uint Profile = 0x588; // to Profile
         public const uint HealthController = 0x5c8; // to HealthController
+        public static readonly uint[] ToObservedHealthController = new uint[]
+        {
+            0x80, 0x110
+        };
         public const uint InventoryController = 0x568; // to InventoryController
         public const uint Physical = 0x598;
         public const uint ProceduralWeaponAnimation = 0x1A0;
@@ -153,16 +159,29 @@ namespace Offsets
             0x60, 0x28, 0x28, Offsets.UnityList.Base
         };
 
+        public static readonly uint[] MovementContext = new uint[]
+        {
+            0x80, 0xE8, 0x10
+        };
+
         public static readonly uint[] Player = new uint[]
         {
             0x30, 0x10
         };
+        public const uint PlayerBody = 0x60;
+        public static readonly uint side = 0xf0;
         public static readonly uint Id = 0x40;
+        public static readonly uint isAI = 0x109;
         public static readonly uint Nickname = 0x48;
+    }
+
+    public struct ObservedMovementContext
+    {
+        public static readonly uint Rotation = 0x78;
     }
     public struct PlayerBody
     {
-        public const uint SlotViews = 0x50;
+        public const uint SlotViews = 0x58;
     }
 
     public struct SlotViews
@@ -196,7 +215,7 @@ namespace Offsets
         public const uint MaxStamina = 0x38;
         public const uint MaxHandStamina = 0x40;
         public const uint MaxOxygen = 0x48;
-        public const uint buff = 0x50;
+        public const uint buff = 0x54;
     }
 
     public struct Profile // EFT.Profile
@@ -225,6 +244,7 @@ namespace Offsets
         public const uint PerceptionLootDot = 0x120;
         public const uint StrengthBuffJumpHeightInc = 0x60;
         public const uint PerceptionHearing = 0x118;
+        public const uint EnduranceRestoration = 0x40;
         public const uint MagDrillsInventoryCheckSpeed = 0x190;
         public const uint MagDrillsInventoryCheckAccuracy = 0x198;
         public const uint AimMasterSpeed = 0x2D0;
@@ -273,7 +293,7 @@ namespace Offsets
     }
     public struct MovementContext
     {
-        public const uint Rotation = 0x234;// 0x22C; // vector2
+        public const uint Rotation = 0x25C;// 0x22C; // vector2
     }
     public struct InventoryController // -.GClass1A98
     {
@@ -295,6 +315,7 @@ namespace Offsets
     public struct HealthController // -.GInterface7AEE
     {
         public static readonly uint[] To_HealthEntries = { 0x68, 0x18 }; // to HealthEntries // if its wrong try { 0x50, 0x18 }
+        public const uint HealthStatus = 0xd8;
     }
     public struct HealthEntries
     {

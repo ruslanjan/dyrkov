@@ -369,6 +369,14 @@ namespace eft_dma_radar
             IsAntialias = false,
             FilterQuality = SKFilterQuality.High,
         };
+        public static readonly SKPaint RadarBG = new SKPaint()
+        {
+            Color = new SKColor(0x33000000),
+            StrokeWidth = 1f,
+            Style = SKPaintStyle.Fill,
+            IsAntialias = false,
+            FilterQuality = SKFilterQuality.High
+        };
         public static readonly SKPaint PaintPMCBox = new SKPaint()
         {
             Color = SKColors.Red,
