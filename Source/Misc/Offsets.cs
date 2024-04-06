@@ -161,7 +161,7 @@ namespace Offsets
 
         public static readonly uint[] MovementContext = new uint[]
         {
-            0x80, 0xE8, 0x10
+            0x80, 0xC8, 0x10
         };
 
         public static readonly uint[] Player = new uint[]
@@ -344,7 +344,7 @@ namespace Offsets
     {
         public const uint LootBaseObject = 0x10; // to LootBaseObject
         public const uint LootItemBase = 0x0b0;//0x50; // to LootItemBase
-        public const uint ContainerItemOwner = 0x110; // to LootableContainer.ItemOwner
+        public const uint ContainerItemOwner = 0x120; // to LootableContainer.ItemOwner
     }
 
     /*

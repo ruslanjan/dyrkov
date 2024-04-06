@@ -259,12 +259,7 @@ namespace eft_dma_radar
                                     var health = round1.AddEntry(i, p, player.HealthEntries[p] + Offsets.HealthEntry.Value,
                                         typeof(float), null);
                                 }
-                            else
-                            {
-                                var controller = round1.AddEntry(i, 0, player.Base, typeof(ulong), null, Offsets.Player.ToObservedHealthController[0]);
-                                var healthController = round2.AddEntry(i, 1, controller, typeof(ulong), null, Offsets.Player.ToObservedHealthController[1]);
-                                round3.AddEntry(i, 2, healthController, typeof(ulong), null, Offsets.HealthController.HealthStatus);
-                            }
+                            
                         }
                         if (!player.IsObserved)
                         {
@@ -367,11 +362,7 @@ namespace eft_dma_radar
                                     bodyParts[p] = scatterMap.Results[i][p].Result;
                                 }
                                 p1 = player.SetHealth(bodyParts);
-                            } else
-                            {
-                                var status = (ulong)scatterMap.Results[i][2].Result;
-                                player.SetHealth(status);
-                            }
+                            } 
                         }
                         if (!player.IsObserved)
                         {

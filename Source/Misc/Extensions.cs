@@ -254,7 +254,8 @@ namespace eft_dma_radar
             "translitor",
             "jopa1337",
             "vladick_",
-            "ToAqu"
+            "ToAqu",
+            "A_Ja_Popal"
         };
 
         public static AIRole GetRole(this WildSpawnType type)
