@@ -1290,7 +1290,7 @@ namespace eft_dma_radar
                     
                     if (_fireportTransform == 0 || true)
                     {
-                        _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + 0x1A0), new uint[]
+                        _fireportTransform = Memory.ReadPtrChain(Memory.ReadPtr(Base + Offsets.Player.ProceduralWeaponAnimation), new uint[]
                         {
                         0xA8,
                         0xd0,
