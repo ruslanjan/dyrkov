@@ -134,15 +134,15 @@ namespace Offsets
         public const uint PlayerBody = 0xA8;
 
         public const uint MovementContext = 0x40; // to MovementContext
-        public const uint Corpse = 0x3C8; // EFT.Interactive.Corpse
-        public const uint Profile = 0x5B8; // to Profile
+        public const uint Corpse = 0x3D0; // EFT.Interactive.Corpse
+        public const uint Profile = 0x5C0; // to Profile
         public const uint HealthController = 0x5F8; // to HealthController
         public static readonly uint[] ToObservedHealthController = new uint[]
         {
             0x80, 0x110
         };
-        public const uint InventoryController = 0x610; // to InventoryController
-        public const uint Physical = 0x5c8;
+        public const uint InventoryController = 0x618; // to InventoryController
+        public const uint Physical = 0x5D0;
         public const uint ProceduralWeaponAnimation = 0x1C0;
         public const uint IsLocalPlayer = 0x936; // bool
     }
