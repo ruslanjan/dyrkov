@@ -12,8 +12,8 @@ namespace eft_dma_radar.Source.Tarkov
     public class FPSCamera
     {
         public ulong p;
-        private ulong ThermalVision;
-        private ulong NightVision;
+        public ulong ThermalVision;
+        public ulong NightVision;
 
         public FPSCamera(ulong p)
         {

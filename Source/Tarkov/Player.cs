@@ -126,7 +126,7 @@ namespace eft_dma_radar
         }
 
 
-
+        public bool isVisible = false;
         public bool IsAiming = false;
         public bool IsScope = false;
 
@@ -372,6 +372,7 @@ namespace eft_dma_radar
         {
             try
             {
+                ulong material = Memory.ReadPtrChain(Memory.Game.FPSCamera.NightVision, new uint[] { 0x90, 0x10, 0x8 });
                 ulong Body;
                 if (!IsObserved)
                     Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
@@ -399,7 +400,7 @@ namespace eft_dma_radar
                             var kEntry = renderers.Data[k];
                             var materialsAddr = Memory.ReadValue<ulong>(kEntry + Offsets.Renderer.Materials); // 0x10
                             if (materialsAddr == 0x0) continue;
-                            NullMaterials(materialsAddr);
+                            ColorMaterials(materialsAddr);
                         }
                     }
                 }
@@ -413,6 +414,7 @@ namespace eft_dma_radar
         {
             try
             {
+                ulong material = Memory.ReadPtrChain(Memory.Game.FPSCamera.NightVision, new uint[] { 0x90, 0x10, 0x8 });
                 ulong Body;
                 if (!IsObserved)
                     Body = Memory.ReadPtr(Base + Offsets.Player.PlayerBody);
@@ -458,7 +460,7 @@ namespace eft_dma_radar
                             ulong MaterialDictionaryBase = Memory.ReadValue<ulong>(pMaterialDictionary + 0x148);
 
                             for (int k = 0; k < MaterialCount; k++)
-                                Memory.Write(MaterialDictionaryBase + ((ulong)k * 0x50), BitConverter.GetBytes(0x0L));
+                                Memory.Write(MaterialDictionaryBase + ((ulong)k * 0x50), BitConverter.GetBytes(material));
                         }
                         if (MaterialCount > 10)
                         {
@@ -485,7 +487,7 @@ namespace eft_dma_radar
                             for (int k = 0; k < material_count; k++)
                             {
                                 if (Memory.ReadValue<ulong>(material_dirbase + ((ulong)k * 0x4)) != 0)
-                                    Memory.Write(material_dirbase + ((ulong)k * 0x4), BitConverter.GetBytes(0x0L));
+                                    Memory.Write(material_dirbase + ((ulong)k * 0x4), BitConverter.GetBytes(material));
                             }
                         }
                     }
@@ -512,6 +514,28 @@ namespace eft_dma_radar
                         ulong addr = MaterialDictionaryBase + (k * 0x50);
                         if (Memory.ReadValue<ulong>(addr) != 0x0)
                             Memory.Write(addr, BitConverter.GetBytes(nullValue)); // Can also log to a List<T> to reapply faster
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        private void ColorMaterials(ulong materials)
+        {
+            var MaterialCount = Memory.ReadValue<int>(materials + 0x158);
+
+            if (MaterialCount > 0 && MaterialCount < 10)
+            {
+                var MaterialDictionaryBase = Memory.ReadValue<ulong>(materials + 0x148);
+
+                ulong material = Memory.ReadPtrChain(Memory.Game.FPSCamera.NightVision, new uint[] { 0x90, 0x10, 0x8 });
+                for (uint k = 0; k < MaterialCount; k++)
+                {
+                    try
+                    {
+                        ulong addr = MaterialDictionaryBase + (k * 0x50);
+                        if (Memory.ReadValue<ulong>(addr) != 0x0)
+                            Memory.Write(addr, BitConverter.GetBytes(material)); // Can also log to a List<T> to reapply faster
                     }
                     catch { }
                 }
@@ -604,6 +628,7 @@ namespace eft_dma_radar
                         }
                     }*/
                 }
+                GroupID = GetGroupID();
                 if (isLocalPlayer)
                 {
                     Program.Log($"LocalPlayer:0x{Base.ToString("X")}");
@@ -617,7 +642,7 @@ namespace eft_dma_radar
                     //Debug.WriteLine($"LocalPlayer K/D: {_kdManager?.GetKD(Profile)}"); // Check if K/D is correct, reference 'Overall' game tab
 #endif
                     //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
-                    GroupID = GetGroupID();
+                    
                     Type = PlayerType.LocalPlayer;
                     
                 }
@@ -955,10 +980,19 @@ namespace eft_dma_radar
         {
             try
             {
-                var grpPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.GroupId);
-                var grp = Memory.ReadUnityString(grpPtr);
-                _groups.TryAdd(grp, _groups.Count);
-                return _groups[grp];
+                if (!IsObserved)
+                {
+                    var grpPtr = Memory.ReadPtr(Info + Offsets.PlayerInfo.GroupId);
+                    var grp = Memory.ReadUnityString(grpPtr);
+                    _groups.TryAdd(grp, _groups.Count);
+                    return _groups[grp];
+                } else
+                {
+                    var grpPtr = Memory.ReadPtr(Base + Offsets.ObservedPlayerView.GroupId);
+                    var grp = Memory.ReadUnityString(grpPtr);
+                    _groups.TryAdd(grp, _groups.Count);
+                    return _groups[grp];
+                }
             }
             catch { return -1; } // will return null if Solo / Don't have a team
         }

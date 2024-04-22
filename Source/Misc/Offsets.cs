@@ -136,7 +136,7 @@ namespace Offsets
         public const uint MovementContext = 0x40; // to MovementContext
         public const uint Corpse = 0x3D0; // EFT.Interactive.Corpse
         public const uint Profile = 0x5C0; // to Profile
-        public const uint HealthController = 0x5F8; // to HealthController
+        public const uint HealthController = 0x600; // to HealthController
         public static readonly uint[] ToObservedHealthController = new uint[]
         {
             0x80, 0x110
@@ -144,7 +144,7 @@ namespace Offsets
         public const uint InventoryController = 0x618; // to InventoryController
         public const uint Physical = 0x5D0;
         public const uint ProceduralWeaponAnimation = 0x1C0;
-        public const uint IsLocalPlayer = 0x936; // bool
+        public const uint IsLocalPlayer = 0x93E; // bool
     }
     public struct ObservedPlayerView {
         public static readonly uint[] To_TransformInternal = new uint[] {
@@ -164,6 +164,11 @@ namespace Offsets
             0x80, 0xC8, 0x10
         };
 
+        public static readonly uint[] IsVisible = new uint[]
+        {
+            0xE0, 0x70
+        };
+
         public static readonly uint[] Player = new uint[]
         {
             0x30, 0x10
@@ -173,6 +178,8 @@ namespace Offsets
         public static readonly uint Id = 0x40;
         public static readonly uint isAI = 0x109;
         public static readonly uint Nickname = 0x48;
+        public static readonly uint GroupId= 0x20;
+        public static readonly uint TeamId = 0x20;
     }
 
     public struct ObservedMovementContext

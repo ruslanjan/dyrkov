@@ -114,6 +114,10 @@ namespace eft_dma_radar
         public static SKPaint GetKekPaint(this Player player, float dist)
         {
             var close = dist < 250f || !player.IsActive || !player.IsAlive;
+            if (player.isVisible)
+            {
+                return SKPaints.PaintSpecial;
+            }
             switch (player.Type)
             {
                 case PlayerType.LocalPlayer:

@@ -711,7 +711,7 @@ namespace eft_dma_radar.Source
                 var LineHeight = 16;
                 canvas.DrawRect(pos.X, pos.Y - 10, LineHeight * (player.Name.Length), 16, SKPaints.DarkTextbg);
             }
-            canvas.DrawText($"{player.Name} {health} {(int)dist}", pos.X, pos.Y, text);
+            canvas.DrawText($"{player.Name} {player.GroupID} {(int)dist}", pos.X, pos.Y, text);
             
             var headPos = player.getBonePose(Player.bones.HumanHead);
             var spinePos = player.getBonePose(Player.bones.HumanSpine3);

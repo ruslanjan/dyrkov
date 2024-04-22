@@ -237,9 +237,9 @@ namespace eft_dma_radar
                 var round1 = scatterMap.AddRound();
                 ScatterReadRound round2 = null;
                 ScatterReadRound round3 = null;
+                round2 = scatterMap.AddRound();
                 if (checkPos || checkHealth) // allocate and add extra rounds to map
                 {
-                    round2 = scatterMap.AddRound();
                     round3 = scatterMap.AddRound();
                 }
                 for (int i = 0; i < players.Length; i++)
@@ -290,10 +290,9 @@ namespace eft_dma_radar
                             vertices.SizeMult = 16;
                         }
 
-
+                        var id = 14; // next id
                         // bones
                         {
-                            var id = 14; // next id
                             foreach (var b in Player.TargetBones)
                             {
                                 var posAddr = player.BonesTransformScatterReadParameters(b);
@@ -306,6 +305,7 @@ namespace eft_dma_radar
                                 id += 2;
                             }
                         }
+                       
                     }
                 }
                 scatterMap.Execute(players.Length); // Execute scatter read
@@ -391,6 +391,8 @@ namespace eft_dma_radar
                         //player.SetKD(); // set KD if not already set
                         if (p1 && p3) player.ErrorCount = 0;
                         else player.ErrorCount++;
+
+                        
                         
                     }
                 }
