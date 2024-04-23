@@ -718,7 +718,7 @@ namespace eft_dma_radar.Source
             var pelvisPos = player.getBonePose(Player.bones.HumanPelvis);
 
             var wep = "";
-            if (false && player.Gear is not null) // Get weapon info via GearManager
+            if (player.Gear is not null) // Get weapon info via GearManager
             {
                 wep = "None";
                 GearItem gearItem = null;
@@ -734,7 +734,7 @@ namespace eft_dma_radar.Source
             var side = player.isUsec ? "Usec:" : "";
             if (side == "")
                 side = player.isBear ? "Bear:" : "";
-            //canvas.DrawText($"{side}{wep}", pos.X, pos.Y + 14, text);
+            canvas.DrawText($"{side}{wep}", pos.X, pos.Y + 14, text);
             if (!player.IsActive || !player.IsAlive)
                 return;
 

@@ -673,7 +673,7 @@ namespace eft_dma_radar
                             else // PLAYER SCAV
                             {
                                 Type = PlayerType.PScav;
-                                //try { _gearManager = new GearManager(playerBase, false); } catch { } // Don't fail allocation - low prio
+                                // try { _gearManager = new GearManager(playerBase, false); } catch { } // Don't fail allocation - low prio
                                 //try { GearManager.MakeAllLootable(playerBase, false); } catch { }
                                 GroupID = GetGroupID();
                                 Lvl = GetPlayerLevel();
@@ -683,6 +683,7 @@ namespace eft_dma_radar
                                 AccountID = GetAccountID();
                             }
                         }
+                        try { _gearManager = new GearManager(playerBase, false, this); } catch { }
                     }
                     else if (IsPmc) // 0x1 0x2 usec/bear
                     {
@@ -709,6 +710,7 @@ namespace eft_dma_radar
                                 }
                             }
                         }
+                        try { _gearManager = new GearManager(playerBase, true, this); } catch { }
                         //Lvl = GetPlayerLevel();
                         //Category = GetMemberCategory();
 

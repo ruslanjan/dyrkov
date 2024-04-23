@@ -139,9 +139,9 @@ namespace Offsets
         public const uint HealthController = 0x600; // to HealthController
         public static readonly uint[] ToObservedHealthController = new uint[]
         {
-            0x80, 0x110
+            0x80, 0xF0
         };
-        public const uint InventoryController = 0x618; // to InventoryController
+        public const uint InventoryController = 0x618; // to InventoryController #GClass2517
         public const uint Physical = 0x5D0;
         public const uint ProceduralWeaponAnimation = 0x1C0;
         public const uint IsLocalPlayer = 0x93E; // bool
@@ -180,6 +180,10 @@ namespace Offsets
         public static readonly uint Nickname = 0x48;
         public static readonly uint GroupId= 0x20;
         public static readonly uint TeamId = 0x20;
+        public static readonly uint[] ToObservedInventoryController = new uint[]
+        {
+            0x80, 0x118
+        };
     }
 
     public struct ObservedMovementContext
@@ -304,7 +308,7 @@ namespace Offsets
     }
     public struct InventoryController // -.GClass1A98
     {
-        public const uint Inventory = 0x130; // to Inventory
+        public const uint Inventory = 0x138; // to Inventory
     }
     public struct Inventory // GClass1BBE
     {
@@ -316,8 +320,8 @@ namespace Offsets
     }
     public struct Slot
     {
-        public const uint Name = 0x10; // string,unity
-        public const uint ContainedItem = 0x38; // to LootItemBase
+        public const uint Name = 0x18; // string,unity
+        public const uint ContainedItem = 0x40; // to LootItemBase
     }
     public struct HealthController // -.GInterface7AEE
     {

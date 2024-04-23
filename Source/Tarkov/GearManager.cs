@@ -61,9 +61,16 @@ namespace eft_dma_radar
             }
         }
 
-        public GearManager(ulong playerBase, bool isPMC)
+        public GearManager(ulong playerBase, bool isPMC, Player player)
         {
-            var inventorycontroller = Memory.ReadPtr(playerBase + Offsets.Player.InventoryController);
+            ulong inventorycontroller;
+            if (!player.IsObserved)
+            {
+                inventorycontroller = Memory.ReadPtr(playerBase + Offsets.Player.InventoryController);
+            } else
+            {
+                inventorycontroller = Memory.ReadPtrChain(playerBase, Offsets.ObservedPlayerView.ToObservedInventoryController);
+            }
             var inventory = Memory.ReadPtr(inventorycontroller + Offsets.InventoryController.Inventory);
             var equipment = Memory.ReadPtr(inventory + Offsets.Inventory.Equipment);
             var slots = Memory.ReadPtr(equipment + Offsets.Equipment.Slots);
@@ -77,7 +84,7 @@ namespace eft_dma_radar
                     var slotPtr = Memory.ReadPtr(slots + Offsets.UnityListBase.Start + (uint)slotID * 0x8);
                     var namePtr = Memory.ReadPtr(slotPtr + Offsets.Slot.Name);
                     var name = Memory.ReadUnityString(namePtr);
-                    if (_skipSlots.Contains(name, StringComparer.OrdinalIgnoreCase))
+                    if (!_skipSlots.Contains(name, StringComparer.OrdinalIgnoreCase))
                     {
                         slotDict.TryAdd(name, slotPtr);
                     }
