@@ -71,10 +71,10 @@ namespace Offsets
     public struct LocalGameWorld // -.ClientLocalGameWorld : ClientGameWorld
     {
         public const uint ExfilController = 0x18; // to ExfilController
-        public const uint LootList = 0xc8; // to UnityList
-        public const uint RegisteredPlayers = 0xF0; // to RegisteredPlayers
-        public const uint AllAlivePlayers = 0x108; // to AllAlivePlayers
-        public const uint Grenades = 0x1A0; // to Grenades
+        public const uint LootList = 0xC0; // to UnityList 0xD0
+        public const uint RegisteredPlayers = 0xF8; // to RegisteredPlayers
+        public const uint AllAlivePlayers = 0x110; // to AllAlivePlayers
+        public const uint Grenades = 0x1A8; // to Grenades 0x1A0
     }
 
     public struct ThermalVision
@@ -397,7 +397,7 @@ namespace Offsets
     }
     public struct ItemTemplate //EFT.InventoryLogic.ItemTemplate
     {
-        public const uint BsgId = 0x50; // string,unity     [50] _id : String
+        public const uint BsgId = 0x60; // string,unity     [50] _id : String 0x50
         public const uint IsQuestItem = 0x9C; // bool       [9C] QuestItem : Boolean
         public const uint NotShownInSlot = 0xD8;
     }

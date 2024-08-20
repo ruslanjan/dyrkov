@@ -1216,7 +1216,7 @@ namespace eft_dma_radar
                         }
 
 
-                        this.disableInertia();
+                        //this.disableInertia();
                         //ToggleMaxStamina();
                     }
 

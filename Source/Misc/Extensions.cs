@@ -259,7 +259,9 @@ namespace eft_dma_radar
             "jopa1337",
             "vladick_",
             "ToAqu",
-            "A_Ja_Popal"
+            "A_Ja_Popal",
+            "TOBI_PIZ",
+            "NEET_Yakuza"
         };
 
         public static AIRole GetRole(this WildSpawnType type)

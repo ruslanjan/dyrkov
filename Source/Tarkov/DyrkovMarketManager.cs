@@ -123,8 +123,8 @@ query {
 
         public static int GetItemValue(TarkovDev.Item item)
         {
-            if (item.avg24hPrice > item.traderPrice)
-                return item.avg24hPrice;
+            if (item.Getavg24hPrice() > item.traderPrice)
+                return item.Getavg24hPrice();
             else
                 return item.traderPrice;
         }
@@ -182,15 +182,18 @@ namespace TarkovDev
         public string bsgId { get { return Id; } }
         [JsonIgnore]
         public string shortName { get { return ShortName; } }
-        [JsonIgnore]
-        public int avg24hPrice => (int)Avg24HPrice;
+
+        public int Getavg24hPrice()
+        {
+            return (int)(Avg24HPrice ?? 0);
+        }
 
         [JsonIgnore]
         public int traderPrice => (int)SellFor.DefaultIfEmpty().Max(x =>
         {
             if (x == null)
             {
-                return Avg24HPrice;
+                return Avg24HPrice ?? 0;
             }
             return x.PriceRub;
         });

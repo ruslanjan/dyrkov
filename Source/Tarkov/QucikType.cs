@@ -45,7 +45,7 @@ namespace TarkovDev
         public int height { get; set; }
 
         [JsonProperty("avg24hPrice")]
-        public long Avg24HPrice { get; set; }
+        public long? Avg24HPrice { get; set; }
 
         [JsonProperty("sellFor")]
         public List<SellFor> SellFor { get; set; } = new List<SellFor>();

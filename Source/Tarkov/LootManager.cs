@@ -271,7 +271,7 @@ namespace eft_dma_radar
                 {
                     foreach (var item in loot)
                     {
-                        var value = Math.Max(item.Item.avg24hPrice, item.Item.traderPrice);
+                        var value = Math.Max(item.Item.Getavg24hPrice(), item.Item.traderPrice);
                         if (item.AlwaysShow || value >= _config.MinLootValue)
                         {
                             if (!filteredLoot.Contains(item))
